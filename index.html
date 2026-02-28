@@ -809,7 +809,13 @@
                                 
                                 nextTick(() => { isRemoteUpdating = false; syncStatus.value = null; });
                             } else {
-                                syncStatus.value = { text: '找不到行程資料', icon: 'ph-bold ph-warning text-red-400' };
+                                // 當雲端資料不存在時，如果本地有資料，就觸發自我修復
+                                if (days.value && days.value.length > 0) {
+                                    syncStatus.value = { text: '正在將本地資料同步至雲端...', icon: 'ph-bold ph-cloud-arrow-up text-teal-300' };
+                                    saveTripToFirebase(); // 自動把遺失在雲端的本地行程上傳
+                                } else {
+                                    syncStatus.value = { text: '找不到行程資料', icon: 'ph-bold ph-warning text-red-400' };
+                                }
                             }
                         }, (error) => {
                             console.error('Snapshot error:', error);
