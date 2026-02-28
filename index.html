@@ -523,7 +523,7 @@
             </div>
         </div>
 
-        <!-- ✨ 新增：行程詳細資訊 (筆記) 視窗 -->
+        <!-- 行程詳細資訊 (筆記) 視窗 -->
         <div v-if="selectedItemForDetails" class="absolute inset-0 bg-slate-800/90 backdrop-blur-sm z-[70] flex items-center justify-center p-4 animate-fade-in">
             <div class="bg-white w-full max-w-md rounded-2xl flex flex-col shadow-2xl overflow-hidden" style="max-height: 85vh;">
                 <!-- 將頂部圖示也更新為 info -->
@@ -1128,7 +1128,7 @@
                     return map[setup.value.currency] || '$';
                 });
 
-                // ✨ 更新：天氣顯示邏輯 (改為讀取 cache 與自動退回今日即時)
+                // 天氣顯示邏輯 (改為讀取 cache 與自動退回今日即時)
                 const weatherDisplay = computed(() => {
                     const loc = currentWeatherLoc.value || setup.value.destination;
                     const wData = weatherCache[loc];
@@ -1230,7 +1230,7 @@
                     }
                 };
 
-                // ✨ 新增：分析並取得每日主要城市名稱
+                // 分析並取得每日主要城市名稱
                 const determineDayLocation = (day) => {
                     if (!day || !day.items || day.items.length === 0) return setup.value.destination;
                     const locs = day.items.map(i => i.location).filter(l => l && l.trim() !== '');
@@ -1238,11 +1238,11 @@
                     
                     const counts = {};
                     let maxCount = 0;
-                    let bestLoc = locs[0]; // 預設用第一個地點
+                    let bestLoc = locs[0]; 
                     
                     for (const loc of locs) {
                         const parts = loc.split(',');
-                        const cityProxy = parts[parts.length - 1].trim(); // 取逗號後的最後一個詞彙作為城市代表
+                        const cityProxy = parts[parts.length - 1].trim(); 
                         counts[cityProxy] = (counts[cityProxy] || 0) + 1;
                         if (counts[cityProxy] > maxCount) {
                             maxCount = counts[cityProxy];
@@ -1252,7 +1252,7 @@
                     return bestLoc;
                 };
 
-                // ✨ 新增：去抓取特定城市的天氣並存入 Cache
+                // 去抓取特定城市的天氣並存入 Cache
                 const fetchWeatherForLoc = async (locName) => {
                     if (!locName || weatherCache[locName]) return;
                     try {
@@ -1277,7 +1277,7 @@
                     }
                 };
 
-                // ✨ 監聽：切換日期時，自動判斷該天在哪並取得對應天氣
+                // 監聽：切換日期時，自動判斷該天在哪並取得對應天氣
                 watch(() => currentDay.value, async (newDay) => {
                     if (!newDay) return;
                     const loc = determineDayLocation(newDay);
@@ -1549,6 +1549,7 @@
                 const applyRecommendation = (item, rec) => { item.activity = rec.name; item.location = rec.name; };
                 const detectRate = async () => { /* ... */ };
                 
+                // ✨ 地圖視圖與跳轉邏輯更新
                 const initMap = async () => { 
                     isMapLoading.value = true; await nextTick(); if (!document.getElementById('map')) return;
                     if (mapInstance) { mapInstance.remove(); mapInstance = null; }
@@ -1570,7 +1571,23 @@
                             const d = await res.json(); 
                             if (d && d.length > 0) { 
                                 const lat = parseFloat(d[0].lat); const lon = parseFloat(d[0].lon); 
-                                L.marker([lat, lon]).addTo(mapInstance).bindPopup(`<b>${item.activity}</b><br>${item.location}`); 
+                                
+                                // 💡 更新彈窗內容，讓整塊都可以點擊跳轉到 Google Maps
+                                const gmapLink = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(item.location)}`;
+                                const popupHtml = `
+                                    <div class="text-center p-1">
+                                        <a href="${gmapLink}" target="_blank" class="block no-underline hover:opacity-80 transition-opacity" style="text-decoration: none; color: inherit;">
+                                            <div class="font-bold text-slate-800 text-[13px] flex items-center justify-center gap-1" style="font-weight: bold; color: #1e293b;">
+                                                ${item.activity || '未命名景點'} <span style="color: #14b8a6; font-size: 14px;">↗️</span>
+                                            </div>
+                                            <div class="text-[10px] text-slate-500 mt-1 truncate max-w-[150px] mx-auto" style="font-size: 11px; color: #64748b; margin-top: 4px;">${item.location}</div>
+                                            <div class="mt-2 text-[10px] bg-teal-50 text-teal-600 font-bold py-1 px-2 rounded-lg inline-block border border-teal-100 shadow-sm" style="font-size: 10px; color: #0d9488; margin-top: 6px; font-weight: bold; background: #f0fdfa; padding: 4px 8px; border-radius: 6px; display: inline-block;">
+                                                開啟 Google Map
+                                            </div>
+                                        </a>
+                                    </div>
+                                `;
+                                L.marker([lat, lon]).addTo(mapInstance).bindPopup(popupHtml); 
                                 bounds.extend([lat, lon]); 
                             } 
                         } catch (e) {}
