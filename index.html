@@ -187,7 +187,11 @@
                                         </div>
                                         <!-- 內容輸入 -->
                                         <div class="flex-1 min-w-0 pt-1">
-                                            <input v-model="item.activity" class="block w-full font-bold text-slate-800 bg-transparent border-none p-0 focus:ring-0" placeholder="行程名稱...">
+                                            <!-- 將筆記 (i) 按鈕移動到景點標題旁邊 -->
+                                            <div class="flex items-center justify-between gap-2">
+                                                <input v-model="item.activity" class="flex-1 min-w-0 font-bold text-slate-800 bg-transparent border-none p-0 focus:ring-0" placeholder="行程名稱...">
+                                                <button @click="openDetails(item)" class="text-blue-500 hover:text-blue-700 bg-blue-50 hover:bg-blue-100 p-1 rounded-full transition-colors shrink-0" title="詳細筆記"><i class="ph-bold ph-info text-base"></i></button>
+                                            </div>
                                             <div class="flex items-center gap-1 mt-1">
                                                 <i class="ph-fill ph-map-pin text-teal-400 text-xs"></i>
                                                 <input v-model="item.location" class="flex-1 text-xs text-slate-500 bg-transparent border-none p-0 focus:ring-0 truncate" placeholder="輸入地點或地址...">
@@ -201,9 +205,8 @@
                                         <!-- 排序與操作按鈕 -->
                                         <div class="flex flex-col gap-1 items-center justify-center pl-2 border-l border-slate-100">
                                             <button @click="moveItem(idx, -1)" :disabled="idx === 0" :class="idx === 0 ? 'opacity-0 cursor-default' : 'hover:text-teal-600 hover:bg-teal-50 text-slate-300'" class="p-1 rounded cursor-pointer transition-colors" title="向上移動"><i class="ph-bold ph-caret-up text-lg"></i></button>
-                                            <!-- ✨ 新增：詳細資訊按鈕 -->
-                                            <button @click="openDetails(item)" class="text-blue-400 hover:text-blue-600 hover:bg-blue-50 p-1.5 rounded-full transition-colors" title="詳細筆記"><i class="ph-bold ph-article"></i></button>
                                             <a :href="getGoogleMapLink(item.location)" target="_blank" class="text-teal-500 hover:bg-teal-50 p-1.5 rounded-full" title="Google 導航"><i class="ph-bold ph-navigation-arrow"></i></a>
+                                            <!-- 加上二次確認的刪除按鈕 -->
                                             <button @click="removeItem(idx)" class="text-red-300 hover:text-white hover:bg-red-500 p-1.5 rounded-full transition-colors" title="刪除行程"><i class="ph-bold ph-trash"></i></button>
                                             <button @click="moveItem(idx, 1)" :disabled="idx === currentDay.items.length - 1" :class="idx === currentDay.items.length - 1 ? 'opacity-0 cursor-default' : 'hover:text-teal-600 hover:bg-teal-50 text-slate-300'" class="p-1 rounded cursor-pointer transition-colors" title="向下移動"><i class="ph-bold ph-caret-down text-lg"></i></button>
                                         </div>
@@ -356,6 +359,7 @@
                                 <div class="text-right">
                                     <div class="font-mono font-black text-slate-800 text-lg">{{ currencySymbol }} {{ exp.amount.toLocaleString() }}</div>
                                 </div>
+                                <!-- 加上二次確認的刪除按鈕 -->
                                 <button @click="removeExpense(idx)" class="text-slate-300 hover:text-red-500 transition-colors p-1.5 hover:bg-red-50 rounded-full"><i class="ph-bold ph-x text-lg"></i></button>
                             </div>
                         </div>
@@ -516,8 +520,9 @@
         <!-- ✨ 新增：行程詳細資訊 (筆記) 視窗 -->
         <div v-if="selectedItemForDetails" class="absolute inset-0 bg-slate-800/90 backdrop-blur-sm z-[70] flex items-center justify-center p-4 animate-fade-in">
             <div class="bg-white w-full max-w-md rounded-2xl flex flex-col shadow-2xl overflow-hidden" style="max-height: 85vh;">
+                <!-- 將頂部圖示也更新為 info -->
                 <div class="p-4 bg-blue-600 text-white flex justify-between items-center shrink-0">
-                    <h2 class="font-bold flex items-center gap-2 truncate"><i class="ph-bold ph-article"></i> {{ selectedItemForDetails.activity || '行程詳細介紹' }}</h2>
+                    <h2 class="font-bold flex items-center gap-2 truncate"><i class="ph-bold ph-info"></i> {{ selectedItemForDetails.activity || '行程詳細介紹' }}</h2>
                     <button @click="closeDetails" class="hover:text-blue-200 transition-colors shrink-0 pl-2"><i class="ph-bold ph-x text-xl"></i></button>
                 </div>
                 <div class="p-5 flex-1 overflow-y-auto bg-slate-50 flex flex-col gap-3">
@@ -1036,7 +1041,7 @@
                 const showExportModal = ref(false);
                 const exportDataStr = ref('');
 
-                // ✨ 詳細資訊彈窗狀態
+                // 詳細資訊彈窗狀態
                 const selectedItemForDetails = ref(null);
 
                 // 資料
@@ -1152,7 +1157,13 @@
 
                 // --- Core Actions ---
                 const addItem = () => currentDay.value.items.push({ time: '', type: 'spot', activity: '', location: '', note: '', description: '' });
-                const removeItem = (idx) => currentDay.value.items.splice(idx, 1);
+                
+                // ✨ 更新：加入二次確認防呆機制
+                const removeItem = (idx) => {
+                    if (confirm('確定要刪除此行程嗎？')) {
+                        currentDay.value.items.splice(idx, 1);
+                    }
+                };
                 
                 // 排序：上移下移功能
                 const moveItem = (idx, direction) => {
@@ -1163,7 +1174,7 @@
                     }
                 };
 
-                // ✨ 詳細資訊操作
+                // 詳細資訊操作
                 const openDetails = (item) => {
                     if (item.description === undefined) item.description = ''; // 相容舊資料
                     selectedItemForDetails.value = item;
@@ -1188,7 +1199,13 @@
                         newExpense.value.amount=''; 
                     }
                 };
-                const removeExpense = (idx) => expenses.value.splice(idx, 1);
+                
+                // ✨ 更新：支出刪除也加入防呆
+                const removeExpense = (idx) => {
+                    if (confirm('確定要刪除此筆支出嗎？')) {
+                        expenses.value.splice(idx, 1);
+                    }
+                };
 
                 // --- Local Storage Sync ---
                 const saveToLocal = () => {
