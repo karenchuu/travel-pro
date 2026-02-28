@@ -168,6 +168,7 @@
                             <div class="bg-white p-3 rounded-xl shadow-sm border border-slate-100 hover:shadow-md transition-shadow">
                                 <div class="flex flex-col gap-2">
                                     <div class="flex items-start gap-3">
+                                        <!-- 時間輸入塊 -->
                                         <div class="flex flex-col items-center w-20 shrink-0 gap-2">
                                             <div class="relative flex flex-col items-center justify-center bg-slate-50 border border-slate-200 rounded-xl p-1 w-full h-16 cursor-pointer hover:bg-teal-50 hover:border-teal-200 transition group/time">
                                                 <span class="text-[10px] font-medium text-slate-400 group-hover/time:text-teal-400">{{ getTimePeriod(item.time) }}</span>
@@ -182,6 +183,7 @@
                                                 <option value="flight">✈️ 航班</option>
                                             </select>
                                         </div>
+                                        <!-- 內容輸入 -->
                                         <div class="flex-1 min-w-0 pt-1">
                                             <input v-model="item.activity" class="block w-full font-bold text-slate-800 bg-transparent border-none p-0 focus:ring-0" placeholder="行程名稱...">
                                             <div class="flex items-center gap-1 mt-1">
@@ -193,13 +195,24 @@
                                                 <input v-model="item.note" class="flex-1 text-xs text-orange-600/90 bg-transparent border-none p-0 focus:ring-0 truncate" placeholder="備註">
                                             </div>
                                         </div>
-                                        <div class="flex flex-col gap-2">
-                                            <a :href="getGoogleMapLink(item.location)" target="_blank" class="text-teal-500 hover:bg-teal-50 p-1 rounded"><i class="ph-bold ph-navigation-arrow"></i></a>
-                                            <button @click="removeItem(idx)" class="text-red-300 hover:text-red-500 p-1 rounded"><i class="ph-bold ph-trash"></i></button>
+                                        
+                                        <!-- 排序與操作按鈕 -->
+                                        <div class="flex flex-col gap-1 items-center justify-center pl-2 border-l border-slate-100">
+                                            <!-- 上移按鈕 -->
+                                            <button @click="moveItem(idx, -1)" :disabled="idx === 0" :class="idx === 0 ? 'opacity-0 cursor-default' : 'hover:text-teal-600 hover:bg-teal-50 text-slate-300'" class="p-1 rounded cursor-pointer transition-colors"><i class="ph-bold ph-caret-up text-lg"></i></button>
+                                            
+                                            <!-- 導航按鈕 -->
+                                            <a :href="getGoogleMapLink(item.location)" target="_blank" class="text-teal-500 hover:bg-teal-50 p-1.5 rounded-full" title="Google 導航"><i class="ph-bold ph-navigation-arrow"></i></a>
+                                            
+                                            <!-- 刪除按鈕 -->
+                                            <button @click="removeItem(idx)" class="text-red-300 hover:text-white hover:bg-red-500 p-1.5 rounded-full transition-colors" title="刪除行程"><i class="ph-bold ph-trash"></i></button>
+                                            
+                                            <!-- 下移按鈕 -->
+                                            <button @click="moveItem(idx, 1)" :disabled="idx === currentDay.items.length - 1" :class="idx === currentDay.items.length - 1 ? 'opacity-0 cursor-default' : 'hover:text-teal-600 hover:bg-teal-50 text-slate-300'" class="p-1 rounded cursor-pointer transition-colors"><i class="ph-bold ph-caret-down text-lg"></i></button>
                                         </div>
                                     </div>
                                     
-                                    <!-- 智慧推薦區 -->
+                                    <!-- 智慧推薦區 (僅美食) -->
                                     <div v-if="item.type === 'food'" class="p-2 bg-orange-50 rounded-lg border border-orange-100/50 mt-1">
                                         <div class="flex items-center justify-between mb-1">
                                             <p class="text-[10px] font-bold text-orange-400 flex items-center gap-1">
@@ -211,11 +224,13 @@
                                                 搜尋
                                             </button>
                                         </div>
+                                        
                                         <div v-if="recommendationsMap[`${currentDayIdx}-${idx}`] && recommendationsMap[`${currentDayIdx}-${idx}`].length > 0" class="flex flex-wrap gap-2 mt-1">
                                             <button v-for="rec in recommendationsMap[`${currentDayIdx}-${idx}`]" :key="rec.name" @click="applyRecommendation(item, rec)" class="text-[10px] px-2 py-1.5 bg-white border border-orange-200 rounded-lg text-slate-600 hover:bg-orange-500 hover:text-white hover:border-orange-500 transition shadow-sm flex flex-col items-start gap-0.5 max-w-[120px] truncate">
                                                 <span class="font-bold truncate w-full text-left">{{ rec.name }}</span>
                                             </button>
                                         </div>
+                                        <div v-else-if="!item.location" class="text-[9px] text-slate-400 italic">請先輸入地點 (例如: 澀谷)，再點擊搜尋</div>
                                     </div>
                                 </div>
                             </div>
@@ -241,7 +256,7 @@
                 </div>
             </div>
 
-            <!-- 分帳視圖 (全新升級設計) -->
+            <!-- 分帳視圖 -->
             <div v-if="viewMode === 'money'" class="pb-24 bg-[#F8FAFC]">
                 
                 <!-- 頂部總額與橫向天數選擇區 -->
@@ -326,8 +341,6 @@
 
                     <!-- 當日支出列表 -->
                     <div class="space-y-3">
-                        <!-- 只顯示選定那一天的支出 (可選：或是全部顯示但當天 Highlight) -->
-                        <!-- 這裡選擇顯示全部，並將當天的特別標示出來，方便看 -->
                         <div v-for="(exp, idx) in expenses" :key="exp.id || idx" 
                              class="flex justify-between items-center bg-white p-4 rounded-2xl shadow-sm border transition-all"
                              :class="exp.dayIdx === currentDayIdx ? 'border-teal-400 ring-2 ring-teal-400/20' : 'border-slate-100 opacity-70'">
@@ -356,7 +369,7 @@
                         </div>
                     </div>
 
-                    <!-- 分帳設定與建議 (收合/展開設計) -->
+                    <!-- 分帳設定與建議 -->
                     <div class="mt-8 bg-white rounded-2xl p-5 border border-slate-200 shadow-sm">
                         <div class="text-xs font-bold text-slate-500 mb-3 tracking-wide">分帳成員設定</div>
                         <input v-model="participantsStr" @change="updateParticipants" class="w-full text-sm bg-slate-50 rounded-xl px-4 py-3 border border-slate-100 focus:border-teal-400 focus:ring-0 font-bold text-slate-700" placeholder="例如: 我, 朋友A, 朋友B">
@@ -421,9 +434,14 @@
                         <h2 class="text-xl font-bold text-slate-800">我的旅程</h2>
                         <button @click="showTripMenu = false" class="text-slate-400 hover:text-slate-600"><i class="ph-bold ph-x text-xl"></i></button>
                     </div>
-                    <button @click="createNewTrip" class="w-full py-3 mb-6 border-2 border-dashed border-teal-400 text-teal-600 rounded-xl font-bold hover:bg-teal-50 flex items-center justify-center gap-2 transition-colors">
-                        <i class="ph-bold ph-plus-circle"></i> 建立新旅程
-                    </button>
+                    <div class="flex gap-2 mb-6">
+                        <button @click="createNewTrip" class="flex-1 py-3 border-2 border-dashed border-teal-400 text-teal-600 rounded-xl font-bold hover:bg-teal-50 flex items-center justify-center gap-2 transition-colors">
+                            <i class="ph-bold ph-plus-circle"></i> 建立新旅程
+                        </button>
+                        <button @click="exportCurrentTrip" class="w-12 border-2 border-slate-200 text-slate-400 rounded-xl flex items-center justify-center hover:bg-teal-50 hover:text-teal-600 transition-colors shadow-sm" title="匯出成初始代碼">
+                            <i class="ph-bold ph-export text-xl"></i>
+                        </button>
+                    </div>
                     <div class="flex-1 overflow-y-auto space-y-3 hide-scroll">
                         <div v-for="trip in tripList" :key="trip.id" 
                              @click="switchTrip(trip.id)"
@@ -548,7 +566,7 @@
                 const currentDay = computed(() => days.value[currentDayIdx.value] || {items:[], flight:null, date:'', title:'', shortDate:''});
                 const totalExpense = computed(() => expenses.value.reduce((sum, item) => sum + (item.amount||0), 0));
                 
-                // [新增] 每日支出總計 (供橫向捲動區使用)
+                // 每日支出總計
                 const dailyExpenses = computed(() => {
                     return days.value.map((day, idx) => {
                         const dayExps = expenses.value.filter(e => e.dayIdx === idx);
@@ -630,18 +648,26 @@
                 // --- Core Actions ---
                 const addItem = () => currentDay.value.items.push({ time: '', type: 'spot', activity: '', location: '', note: '' });
                 const removeItem = (idx) => currentDay.value.items.splice(idx, 1);
+                
+                const moveItem = (idx, direction) => {
+                    const newIdx = idx + direction;
+                    if (newIdx >= 0 && newIdx < currentDay.value.items.length) {
+                        const item = currentDay.value.items.splice(idx, 1)[0];
+                        currentDay.value.items.splice(newIdx, 0, item);
+                    }
+                };
+
                 const addDay = () => days.value.push({ date: `Day ${days.value.length+1}`, title: '', items: [] });
                 const removeCurrentDay = () => { if(days.value.length>1 && confirm('刪除?')) { days.value.splice(currentDayIdx.value, 1); currentDayIdx.value=0; }};
                 const getGoogleMapLink = (loc) => loc ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(loc)}` : '#';
                 
-                // [修改] 新增支出時，記錄是屬於「哪一天」
                 const addExpense = () => { 
                     if(newExpense.value.item && newExpense.value.amount) { 
                         expenses.value.unshift({
                             ...newExpense.value,
-                            id: Date.now() + Math.random(), // 產生唯一ID
-                            dayIdx: currentDayIdx.value,    // 綁定當下選取的日期索引
-                            dateStr: currentDay.value.shortDate // 儲存日期字串供顯示
+                            id: Date.now() + Math.random(),
+                            dayIdx: currentDayIdx.value,
+                            dateStr: currentDay.value.shortDate
                         }); 
                         newExpense.value.item=''; 
                         newExpense.value.amount=''; 
@@ -710,8 +736,13 @@
                     
                     if(unsubscribeSnapshot) { unsubscribeSnapshot(); unsubscribeSnapshot = null; }
                     
-                    // 先載入本地，讓畫面不留白
+                    // ✨ 關鍵防護 1：在載入本機舊資料前，先開啟「防護罩 (isRemoteUpdating)」，避免觸發自動存檔
+                    isRemoteUpdating = true;
                     loadFromLocal(id);
+                    // 等待資料載入完畢後，再把防護罩關掉
+                    nextTick(() => {
+                        isRemoteUpdating = false;
+                    });
 
                     if (!firebaseReady.value) return;
                     
@@ -784,7 +815,36 @@
                     }
                 };
 
-                // --- 初始化流程 (完全防覆寫機制) ---
+                const exportCurrentTrip = () => {
+                    if (!currentTripId.value) return;
+                    const exportObj = {
+                        id: 'trip_euro_2026_spring',
+                        destination: setup.value.destination,
+                        startDate: setup.value.startDate,
+                        daysCount: setup.value.days,
+                        rate: exchangeRate.value,
+                        currency: setup.value.currency,
+                        langCode: setup.value.langCode,
+                        langName: setup.value.langName,
+                        users: participantsStr.value,
+                        expenses: expenses.value,
+                        days: days.value
+                    };
+                    const jsonStr = JSON.stringify(exportObj, null, 4);
+                    
+                    const el = document.createElement('textarea');
+                    el.value = jsonStr;
+                    document.body.appendChild(el);
+                    el.select();
+                    document.execCommand('copy');
+                    document.body.removeChild(el);
+
+                    showTripMenu.value = false;
+                    syncStatus.value = { text: '✅ 已複製代碼，請貼上至 defaultEuroTripData', icon: 'ph-bold ph-check-circle text-green-400' };
+                    setTimeout(() => { syncStatus.value = null; }, 5000);
+                };
+
+                // --- 初始化流程 ---
                 onMounted(async () => {
                     try {
                         await signInAnonymously(auth);
@@ -793,24 +853,22 @@
                         console.error("Firebase 登入失敗", err);
                     }
 
-                    // 1. 取得本地清單
                     const list = localStorage.getItem('travel_app_index');
                     if (list) {
                         tripList.value = JSON.parse(list);
                     }
 
-                    // 2. 決定當前的行程 ID
                     const targetId = tripList.value.length > 0 ? tripList.value[0].id : defaultEuroTripData.id;
                     
-                    // 3. ✨ 核心修復：新裝置會「先」去雲端敲門拿資料，絕不直接覆蓋 ✨
                     if (firebaseReady.value) {
                         try {
                             const tripRef = doc(db, 'travel_plans', targetId);
                             const docSnap = await getDoc(tripRef);
                             
+                            // ✨ 關鍵防護 2：在確認 Firebase 狀態前，先開啟防護罩
+                            isRemoteUpdating = true; 
+
                             if (docSnap.exists()) {
-                                // 雲端有資料！太棒了，直接拿下來用
-                                isRemoteUpdating = true;
                                 const data = docSnap.data();
                                 setup.value = data.setup;
                                 days.value = data.days;
@@ -818,19 +876,14 @@
                                 if(data.users) participantsStr.value = data.users;
                                 if(data.rate) exchangeRate.value = data.rate;
                                 
-                                // 如果是完全新的裝置，把它加進本地列表
                                 if (tripList.value.length === 0) {
                                     tripList.value.push({ id: targetId, destination: setup.value.destination, startDate: setup.value.startDate, daysCount: days.value.length });
                                     localStorage.setItem('travel_app_index', JSON.stringify(tripList.value));
                                 }
                                 saveToLocal();
                                 updateParticipants();
-                                isRemoteUpdating = false;
                             } else {
-                                // 雲端沒有資料，代表這是您真的第一次建立
                                 if (tripList.value.length === 0) {
-                                    // 連本地都沒有，那就載入預設的義大利行程，然後上傳
-                                    isRemoteUpdating = true;
                                     tripList.value.push({ id: defaultEuroTripData.id, destination: defaultEuroTripData.destination, startDate: defaultEuroTripData.startDate, daysCount: defaultEuroTripData.daysCount });
                                     localStorage.setItem('travel_app_index', JSON.stringify(tripList.value));
                                     setup.value = { ...defaultEuroTripData };
@@ -838,25 +891,29 @@
                                     days.value = defaultEuroTripData.days;
                                     updateParticipants();
                                     saveToLocal();
-                                    isRemoteUpdating = false;
-                                    await saveTripToFirebase(); // 上傳預設行程
+                                    
+                                    // 只有當 Firebase 是空的且本地也是空的時候，才解除防護並上傳預設資料
+                                    isRemoteUpdating = false; 
+                                    await saveTripToFirebase();
+                                    // 提早 return 避免後面的程式碼打亂順序
+                                    isRemoteUpdating = true; 
                                 }
                             }
+                            // 所有的非同步與判定做完後，才安全關閉防護罩
+                            isRemoteUpdating = false;
                         } catch(e) {
                             console.error("初次抓取失敗，退回本地", e);
+                            isRemoteUpdating = false;
                         }
-                    } else if (tripList.value.length === 0) {
-                        // 無網路且無本地資料，載入預設
-                        // (省略賦值邏輯，與上方類似)
                     }
 
-                    // 4. 開始即時雙向綁定
                     switchTrip(targetId);
                     
-                    // 防抖上傳機制
                     let saveTimeout = null;
                     watch([days, expenses, exchangeRate, participantsStr, setup], () => {
+                        // 如果在更新防護罩期間，直接擋掉，絕對不上傳
                         if (isRemoteUpdating || !currentTripId.value) return;
+                        
                         saveToLocal();
                         if (firebaseReady.value) {
                             clearTimeout(saveTimeout);
@@ -865,11 +922,11 @@
                     }, { deep: true });
                 });
 
-                // (其餘API與地圖邏輯保持不變)
-                const searchNearby = async (item, idx) => { /* ...省略(保持原樣)... */ };
+                // LBS 與其他功能維持不變
+                const searchNearby = async (item, idx) => { /* ... */ };
                 const applyRecommendation = (item, rec) => { item.activity = rec.name; item.location = rec.name; };
-                const detectRate = async () => { /* ...省略(保持原樣)... */ };
-                const fetchWeather = async (locName) => { /* ...省略(保持原樣)... */ };
+                const detectRate = async () => { /* ... */ };
+                const fetchWeather = async (locName) => { /* ... */ };
                 
                 const initMap = async () => { 
                     isMapLoading.value = true; await nextTick(); if (!document.getElementById('map')) return;
@@ -906,13 +963,13 @@
 
                 return {
                     viewMode, currentDayIdx, days, currentDay, participants, participantsStr, updateParticipants,
-                    getGoogleMapLink, addItem, removeItem, removeCurrentDay, addDay,
+                    getGoogleMapLink, addItem, removeItem, moveItem, removeCurrentDay, addDay,
                     expenses, newExpense, totalExpense, addExpense, removeExpense, dailyExpenses,
                     paidByPerson, settlementPlan, exchangeRate, syncStatus,
                     getTimePeriod, weather,
                     isMapLoading, userLocation, initMap, centerOnUser,
                     updateDate, showSetupModal, setup, initTrip, weatherDisplay, detectRate, isRateLoading, currencyLabel, currencySymbol, toggleFlightCard, getDotColor,
-                    showTripMenu, tripList, createNewTrip, switchTrip, deleteTrip, currentTripId,
+                    showTripMenu, tripList, createNewTrip, switchTrip, deleteTrip, currentTripId, exportCurrentTrip,
                     searchNearby, recommendationsMap, isSearchingRecs, applyRecommendation, searchTargetIndex
                 };
             }
