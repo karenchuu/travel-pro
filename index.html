@@ -175,7 +175,7 @@
                                                 <span class="text-xl font-bold text-slate-700 group-hover/time:text-teal-600 leading-none font-mono tracking-tight">{{ item.time || '--:--' }}</span>
                                                 <input v-model="item.time" type="time" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10">
                                             </div>
-                                            <!-- ✨ 更新：加入「住宿」類別 -->
+                                            <!-- 加入「住宿」類別 -->
                                             <select v-model="item.type" class="text-[10px] bg-white border border-slate-200 rounded-md py-1 px-1 w-full text-center">
                                                 <option value="spot">📍 景點</option>
                                                 <option value="food">🍴 美食</option>
@@ -201,6 +201,8 @@
                                         <!-- 排序與操作按鈕 -->
                                         <div class="flex flex-col gap-1 items-center justify-center pl-2 border-l border-slate-100">
                                             <button @click="moveItem(idx, -1)" :disabled="idx === 0" :class="idx === 0 ? 'opacity-0 cursor-default' : 'hover:text-teal-600 hover:bg-teal-50 text-slate-300'" class="p-1 rounded cursor-pointer transition-colors" title="向上移動"><i class="ph-bold ph-caret-up text-lg"></i></button>
+                                            <!-- ✨ 新增：詳細資訊按鈕 -->
+                                            <button @click="openDetails(item)" class="text-blue-400 hover:text-blue-600 hover:bg-blue-50 p-1.5 rounded-full transition-colors" title="詳細筆記"><i class="ph-bold ph-article"></i></button>
                                             <a :href="getGoogleMapLink(item.location)" target="_blank" class="text-teal-500 hover:bg-teal-50 p-1.5 rounded-full" title="Google 導航"><i class="ph-bold ph-navigation-arrow"></i></a>
                                             <button @click="removeItem(idx)" class="text-red-300 hover:text-white hover:bg-red-500 p-1.5 rounded-full transition-colors" title="刪除行程"><i class="ph-bold ph-trash"></i></button>
                                             <button @click="moveItem(idx, 1)" :disabled="idx === currentDay.items.length - 1" :class="idx === currentDay.items.length - 1 ? 'opacity-0 cursor-default' : 'hover:text-teal-600 hover:bg-teal-50 text-slate-300'" class="p-1 rounded cursor-pointer transition-colors" title="向下移動"><i class="ph-bold ph-caret-down text-lg"></i></button>
@@ -507,6 +509,23 @@
                     <button @click="copyExportData" class="flex-1 py-3 bg-teal-600 text-white rounded-xl font-bold hover:bg-teal-700 transition flex items-center justify-center gap-2 shadow-md">
                         <i class="ph-bold ph-copy text-lg"></i> 複製代碼
                     </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ✨ 新增：行程詳細資訊 (筆記) 視窗 -->
+        <div v-if="selectedItemForDetails" class="absolute inset-0 bg-slate-800/90 backdrop-blur-sm z-[70] flex items-center justify-center p-4 animate-fade-in">
+            <div class="bg-white w-full max-w-md rounded-2xl flex flex-col shadow-2xl overflow-hidden" style="max-height: 85vh;">
+                <div class="p-4 bg-blue-600 text-white flex justify-between items-center shrink-0">
+                    <h2 class="font-bold flex items-center gap-2 truncate"><i class="ph-bold ph-article"></i> {{ selectedItemForDetails.activity || '行程詳細介紹' }}</h2>
+                    <button @click="closeDetails" class="hover:text-blue-200 transition-colors shrink-0 pl-2"><i class="ph-bold ph-x text-xl"></i></button>
+                </div>
+                <div class="p-5 flex-1 overflow-y-auto bg-slate-50 flex flex-col gap-3">
+                    <div class="text-xs text-slate-500 font-bold mb-1 flex items-center gap-1"><i class="ph-fill ph-info"></i> 必看重點 / 詳細筆記</div>
+                    <textarea v-model="selectedItemForDetails.description" placeholder="在這裡輸入景點的必看重點、歷史介紹或任何詳細筆記..." class="w-full flex-1 min-h-[250px] p-4 bg-white border border-slate-200 rounded-xl text-sm text-slate-700 focus:outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-400 resize-none leading-relaxed shadow-sm"></textarea>
+                </div>
+                <div class="p-4 border-t border-slate-200 bg-white text-right shrink-0">
+                    <button @click="closeDetails" class="px-6 py-2.5 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700 transition shadow-md w-full sm:w-auto">完成</button>
                 </div>
             </div>
         </div>
@@ -1017,6 +1036,9 @@
                 const showExportModal = ref(false);
                 const exportDataStr = ref('');
 
+                // ✨ 詳細資訊彈窗狀態
+                const selectedItemForDetails = ref(null);
+
                 // 資料
                 const days = ref([]);
                 const expenses = ref([]);
@@ -1114,7 +1136,7 @@
                      else { currentDay.value.flight = { type: 'arrival', startTime: '10:00', startAirport: 'TPE', number: 'FLIGHT', endTime: '14:00', endAirport: 'DEST', arrivalOffset: 0 }; }
                 };
 
-                // ✨ 加入住宿顏色的 mapping
+                // 加入住宿顏色的 mapping (hotel 為 purple)
                 const getDotColor = (t) => t==='food'?'bg-orange-400':t==='shop'?'bg-pink-400':t==='flight'?'bg-blue-500':t==='hotel'?'bg-purple-500':'bg-teal-500';
                 const updateParticipants = () => { participants.value = participantsStr.value.split(',').map(s=>s.trim()).filter(s=>s); };
                 const updateDate = (e, day) => {
@@ -1129,7 +1151,7 @@
                 };
 
                 // --- Core Actions ---
-                const addItem = () => currentDay.value.items.push({ time: '', type: 'spot', activity: '', location: '', note: '' });
+                const addItem = () => currentDay.value.items.push({ time: '', type: 'spot', activity: '', location: '', note: '', description: '' });
                 const removeItem = (idx) => currentDay.value.items.splice(idx, 1);
                 
                 // 排序：上移下移功能
@@ -1139,6 +1161,15 @@
                         const item = currentDay.value.items.splice(idx, 1)[0];
                         currentDay.value.items.splice(newIdx, 0, item);
                     }
+                };
+
+                // ✨ 詳細資訊操作
+                const openDetails = (item) => {
+                    if (item.description === undefined) item.description = ''; // 相容舊資料
+                    selectedItemForDetails.value = item;
+                };
+                const closeDetails = () => {
+                    selectedItemForDetails.value = null;
                 };
 
                 const addDay = () => days.value.push({ date: `Day ${days.value.length+1}`, title: '', items: [] });
@@ -1469,6 +1500,7 @@
                     updateDate, showSetupModal, setup, initTrip, weatherDisplay, detectRate, isRateLoading, currencyLabel, currencySymbol, toggleFlightCard, getDotColor,
                     showTripMenu, tripList, createNewTrip, switchTrip, deleteTrip, currentTripId, 
                     exportCurrentTrip, showExportModal, exportDataStr, copyExportData, downloadJson,
+                    selectedItemForDetails, openDetails, closeDetails, // 導出詳細筆記視窗狀態與方法
                     searchNearby, recommendationsMap, isSearchingRecs, applyRecommendation, searchTargetIndex
                 };
             }
