@@ -112,12 +112,12 @@
                         <div class="flex flex-col items-end pl-2">
                             <div v-if="weatherDisplay" class="text-right">
                                 <div class="flex items-center justify-end gap-1 text-indigo-600">
-                                    <i :class="['ph-duotone', weatherDisplay.icon, 'text-2xl']"></i>
-                                    <span class="text-xl font-bold font-mono whitespace-nowrap">{{ weatherDisplay.temp }}</span>
+                                    <i :class="['ph-duotone', weatherDisplay.icon, 'text-2xl', weatherDisplay.icon.includes('spinner') ? 'animate-spin' : '']"></i>
+                                    <span class="text-xl font-bold font-mono whitespace-nowrap ml-1">{{ weatherDisplay.temp }}</span>
                                 </div>
-                                <div class="text-[10px] text-slate-400 flex items-center gap-1 justify-end mt-0.5">
+                                <div class="text-[10px] text-slate-400 flex items-center gap-1 justify-end mt-0.5 max-w-[120px]">
                                     <i :class="weatherDisplay.isForecast ? 'ph-bold ph-calendar' : 'ph-bold ph-map-pin'"></i>
-                                    {{ weatherDisplay.label }}
+                                    <span class="truncate">{{ weatherDisplay.label }}</span>
                                 </div>
                             </div>
                         </div>
@@ -1057,7 +1057,6 @@
                 const isRateLoading = ref(false);
                 const isMapLoading = ref(false);
                 const userLocation = ref(null);
-                const weather = ref({ temp: null, icon: 'ph-sun', code: 0, location: '', daily: [] });
                 const setup = ref({ destination: '義大利與西班牙', startDate: '2026-03-21', days: 13, rate: 34.5, currency: 'EUR', langCode: 'it', langName: '義大利文' });
 
                 const recommendationsMap = reactive({});
@@ -1067,8 +1066,12 @@
                 // Firebase 同步控制
                 const firebaseReady = ref(false);
                 let unsubscribeSnapshot = null;
-                let isRemoteUpdating = false; // 🛡️ 終極防護：防止本地錯誤覆蓋雲端的安全鎖
+                let isRemoteUpdating = false; 
                 let mapInstance = null;
+
+                // ✨ 新增：快取與天氣狀態管理
+                const weatherCache = reactive({});
+                const currentWeatherLoc = ref('');
 
                 // --- Computed ---
                 const currentDay = computed(() => days.value[currentDayIdx.value] || {items:[], flight:null, date:'', title:'', shortDate:''});
@@ -1118,18 +1121,37 @@
                     const map = { 'JPY': '¥', 'CNY': '¥', 'USD': '$', 'EUR': '€', 'KRW': '₩', 'GBP': '£', 'TWD': 'NT$', 'HKD': 'HK$', 'THB': '฿', 'VND': '₫' };
                     return map[setup.value.currency] || '$';
                 });
+
+                // ✨ 更新：天氣顯示邏輯 (改為讀取 cache 與自動退回今日即時)
                 const weatherDisplay = computed(() => {
-                    if (!currentDay.value || !currentDay.value.fullDate || weather.value.daily.length === 0) {
-                        return { temp: weather.value.temp !== null ? `${weather.value.temp}°` : '--', icon: weather.value.icon || 'ph-sun', label: `${setup.value.destination || '當地'} (目前)`, isForecast: false };
+                    const loc = currentWeatherLoc.value || setup.value.destination;
+                    const wData = weatherCache[loc];
+                    
+                    if (!wData || wData.isLoading) {
+                        return { temp: '--', icon: 'ph-spinner animate-spin', label: `${loc} (天氣讀取中...)`, isForecast: false };
                     }
+                    
                     const targetDate = currentDay.value.fullDate;
-                    const idx = weather.value.daily.time.indexOf(targetDate);
-                    if (idx !== -1) {
-                        const max = Math.round(weather.value.daily.temperature_2m_max[idx]);
-                        const min = Math.round(weather.value.daily.temperature_2m_min[idx]);
-                        return { temp: `${min}° - ${max}°`, icon: getWeatherIcon(weather.value.daily.weathercode[idx]), label: `${setup.value.destination} (預報)`, isForecast: true };
+                    let displayTemp = wData.temp !== null && wData.temp !== '--' ? `${wData.temp}°` : '--';
+                    let displayIcon = wData.icon || 'ph-sun';
+                    let isForecast = false;
+                    // 預設為今日即時天氣 (當抓不到該天的預報時的退路)
+                    let label = `${loc} (今日即時)`; 
+
+                    // 如果找得到 16 天內的預報，就覆蓋成該天預報
+                    if (wData.daily && targetDate) {
+                        const idx = wData.daily.time.indexOf(targetDate);
+                        if (idx !== -1) {
+                            const max = Math.round(wData.daily.temperature_2m_max[idx]);
+                            const min = Math.round(wData.daily.temperature_2m_min[idx]);
+                            displayTemp = `${min}° - ${max}°`;
+                            displayIcon = getWeatherIcon(wData.daily.weathercode[idx]);
+                            isForecast = true;
+                            label = `${loc} (預報)`;
+                        }
                     }
-                    return { temp: weather.value.temp !== null ? `${weather.value.temp}°` : '--', icon: weather.value.icon || 'ph-sun', label: `${setup.value.destination} (目前)`, isForecast: false };
+                    
+                    return { temp: displayTemp, icon: displayIcon, label, isForecast };
                 });
 
                 // --- Helpers ---
@@ -1141,7 +1163,6 @@
                      else { currentDay.value.flight = { type: 'arrival', startTime: '10:00', startAirport: 'TPE', number: 'FLIGHT', endTime: '14:00', endAirport: 'DEST', arrivalOffset: 0 }; }
                 };
 
-                // 加入住宿顏色的 mapping (hotel 為 purple)
                 const getDotColor = (t) => t==='food'?'bg-orange-400':t==='shop'?'bg-pink-400':t==='flight'?'bg-blue-500':t==='hotel'?'bg-purple-500':'bg-teal-500';
                 const updateParticipants = () => { participants.value = participantsStr.value.split(',').map(s=>s.trim()).filter(s=>s); };
                 const updateDate = (e, day) => {
@@ -1158,14 +1179,12 @@
                 // --- Core Actions ---
                 const addItem = () => currentDay.value.items.push({ time: '', type: 'spot', activity: '', location: '', note: '', description: '' });
                 
-                // ✨ 更新：加入二次確認防呆機制
                 const removeItem = (idx) => {
                     if (confirm('確定要刪除此行程嗎？')) {
                         currentDay.value.items.splice(idx, 1);
                     }
                 };
                 
-                // 排序：上移下移功能
                 const moveItem = (idx, direction) => {
                     const newIdx = idx + direction;
                     if (newIdx >= 0 && newIdx < currentDay.value.items.length) {
@@ -1174,9 +1193,8 @@
                     }
                 };
 
-                // 詳細資訊操作
                 const openDetails = (item) => {
-                    if (item.description === undefined) item.description = ''; // 相容舊資料
+                    if (item.description === undefined) item.description = ''; 
                     selectedItemForDetails.value = item;
                 };
                 const closeDetails = () => {
@@ -1200,12 +1218,71 @@
                     }
                 };
                 
-                // ✨ 更新：支出刪除也加入防呆
                 const removeExpense = (idx) => {
                     if (confirm('確定要刪除此筆支出嗎？')) {
                         expenses.value.splice(idx, 1);
                     }
                 };
+
+                // ✨ 新增：分析並取得每日主要城市名稱
+                const determineDayLocation = (day) => {
+                    if (!day || !day.items || day.items.length === 0) return setup.value.destination;
+                    const locs = day.items.map(i => i.location).filter(l => l && l.trim() !== '');
+                    if (locs.length === 0) return setup.value.destination;
+                    
+                    const counts = {};
+                    let maxCount = 0;
+                    let bestLoc = locs[0]; // 預設用第一個地點
+                    
+                    for (const loc of locs) {
+                        const parts = loc.split(',');
+                        const cityProxy = parts[parts.length - 1].trim(); // 取逗號後的最後一個詞彙作為城市代表
+                        counts[cityProxy] = (counts[cityProxy] || 0) + 1;
+                        if (counts[cityProxy] > maxCount) {
+                            maxCount = counts[cityProxy];
+                            bestLoc = cityProxy; 
+                        }
+                    }
+                    return bestLoc;
+                };
+
+                // ✨ 新增：去抓取特定城市的天氣並存入 Cache
+                const fetchWeatherForLoc = async (locName) => {
+                    if (!locName || weatherCache[locName]) return;
+                    try {
+                        weatherCache[locName] = { temp: '--', icon: 'ph-sun', daily: null, isLoading: true };
+                        const geoRes = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(locName)}&limit=1`);
+                        const geoData = await geoRes.json();
+                        if (geoData?.[0]) {
+                            const { lat, lon } = geoData[0];
+                            const wRes = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current_weather=true&daily=temperature_2m_max,temperature_2m_min,weathercode&timezone=auto&forecast_days=16`);
+                            const wData = await wRes.json();
+                            weatherCache[locName] = {
+                                temp: Math.round(wData.current_weather.temperature),
+                                icon: getWeatherIcon(wData.current_weather.weathercode),
+                                daily: wData.daily,
+                                isLoading: false
+                            };
+                        } else {
+                            weatherCache[locName].isLoading = false;
+                        }
+                    } catch (e) {
+                        weatherCache[locName].isLoading = false;
+                    }
+                };
+
+                // ✨ 監聽：切換日期時，自動判斷該天在哪並取得對應天氣
+                watch(() => currentDay.value, async (newDay) => {
+                    if (!newDay) return;
+                    const loc = determineDayLocation(newDay);
+                    if (currentWeatherLoc.value !== loc) {
+                        currentWeatherLoc.value = loc;
+                        if (!weatherCache[loc]) {
+                            await fetchWeatherForLoc(loc);
+                        }
+                    }
+                }, { deep: true, immediate: true });
+
 
                 // --- Local Storage Sync ---
                 const saveToLocal = () => {
@@ -1227,7 +1304,7 @@
                     const lRate = localStorage.getItem(`${id}_rate`);
                     if(lRate) exchangeRate.value = parseFloat(lRate);
                     const lConf = localStorage.getItem(`${id}_config`);
-                    if(lConf) { setup.value = JSON.parse(lConf); fetchWeather(setup.value.destination); }
+                    if(lConf) { setup.value = JSON.parse(lConf); }
                 }
 
                 // --- Firebase DB Sync Logic ---
@@ -1268,7 +1345,6 @@
                     
                     if(unsubscribeSnapshot) { unsubscribeSnapshot(); unsubscribeSnapshot = null; }
                     
-                    // 🛡️ 關鍵防護 1：在載入本機舊資料前，先開啟防護罩，避免意外觸發自動存檔
                     isRemoteUpdating = true;
                     loadFromLocal(id);
                     nextTick(() => { isRemoteUpdating = false; });
@@ -1290,7 +1366,6 @@
                                 if(data.users) { participantsStr.value = data.users; updateParticipants(); }
                                 if(data.rate) exchangeRate.value = data.rate;
                                 
-                                fetchWeather(setup.value.destination);
                                 saveToLocal();
                                 
                                 nextTick(() => { isRemoteUpdating = false; syncStatus.value = null; });
@@ -1344,7 +1419,6 @@
                     }
                 };
 
-                // 匯出當前行程代碼 (打開視窗)
                 const exportCurrentTrip = () => {
                     if (!currentTripId.value) return;
                     const exportObj = {
@@ -1361,13 +1435,11 @@
                         days: days.value
                     };
                     
-                    // 將資料轉成格式化的 JSON 字串並顯示視窗
                     exportDataStr.value = JSON.stringify(exportObj, null, 4);
                     showTripMenu.value = false;
                     showExportModal.value = true;
                 };
 
-                // 複製代碼功能
                 const copyExportData = () => {
                     const el = document.createElement('textarea');
                     el.value = exportDataStr.value;
@@ -1380,7 +1452,6 @@
                     setTimeout(() => { syncStatus.value = null; }, 3000);
                 };
 
-                // 下載 .json 檔案功能
                 const downloadJson = () => {
                     const blob = new Blob([exportDataStr.value], { type: "application/json" });
                     const url = URL.createObjectURL(blob);
@@ -1414,7 +1485,6 @@
                             const tripRef = doc(db, 'travel_plans', targetId);
                             const docSnap = await getDoc(tripRef);
                             
-                            // 🛡️ 關鍵防護 2：在確認 Firebase 狀態前，先開啟防護罩
                             isRemoteUpdating = true; 
 
                             if (docSnap.exists()) {
@@ -1472,7 +1542,6 @@
                 const searchNearby = async (item, idx) => { /* ... */ };
                 const applyRecommendation = (item, rec) => { item.activity = rec.name; item.location = rec.name; };
                 const detectRate = async () => { /* ... */ };
-                const fetchWeather = async (locName) => { /* ... */ };
                 
                 const initMap = async () => { 
                     isMapLoading.value = true; await nextTick(); if (!document.getElementById('map')) return;
@@ -1512,12 +1581,12 @@
                     getGoogleMapLink, addItem, removeItem, moveItem, removeCurrentDay, addDay,
                     expenses, newExpense, totalExpense, addExpense, removeExpense, dailyExpenses,
                     paidByPerson, settlementPlan, exchangeRate, syncStatus,
-                    getTimePeriod, weather,
+                    getTimePeriod,
                     isMapLoading, userLocation, initMap, centerOnUser,
                     updateDate, showSetupModal, setup, initTrip, weatherDisplay, detectRate, isRateLoading, currencyLabel, currencySymbol, toggleFlightCard, getDotColor,
                     showTripMenu, tripList, createNewTrip, switchTrip, deleteTrip, currentTripId, 
                     exportCurrentTrip, showExportModal, exportDataStr, copyExportData, downloadJson,
-                    selectedItemForDetails, openDetails, closeDetails, // 導出詳細筆記視窗狀態與方法
+                    selectedItemForDetails, openDetails, closeDetails, 
                     searchNearby, recommendationsMap, isSearchingRecs, applyRecommendation, searchTargetIndex
                 };
             }
