@@ -58,6 +58,7 @@
                     <button @click="showTripMenu = true" class="text-teal-100 hover:text-white transition shrink-0">
                         <i class="ph-bold ph-list text-2xl"></i>
                     </button>
+                    <!-- 修復手機版跑版的關鍵：flex-1 min-w-0 讓文字自動縮略 -->
                     <div class="flex-1 min-w-0">
                         <h1 class="text-lg font-bold tracking-wide flex items-center gap-1.5 truncate">
                             <span class="truncate">{{ setup.destination || '旅遊計畫' }}</span>
@@ -70,6 +71,7 @@
                         </p>
                     </div>
                 </div>
+                <!-- 按鈕區塊使用 shrink-0 防止被擠壓 -->
                 <div class="flex items-center gap-1.5 shrink-0">
                     <button @click="viewMode = 'translate'" 
                             :class="viewMode === 'translate' ? 'bg-white text-teal-700 shadow-sm' : 'bg-teal-500/30 text-teal-200 hover:bg-teal-500/50'"
@@ -85,7 +87,7 @@
                 </div>
             </div>
             
-            <!-- 天數選單 (只在非記帳模式顯示，記帳模式有自己的橫列) -->
+            <!-- 天數選單 (只在非記帳模式顯示) -->
             <div v-show="viewMode !== 'money'" class="flex overflow-x-auto hide-scroll px-4 pb-3 space-x-3 snap-x">
                 <div v-for="(day, index) in days" :key="index" @click="currentDayIdx = index" class="snap-center shrink-0 flex flex-col items-center justify-center w-16 h-16 rounded-xl cursor-pointer transition-all border-2" :class="currentDayIdx === index ? 'bg-white text-teal-600 border-white shadow-lg scale-105' : 'bg-white/10 text-teal-100 border-transparent hover:bg-white/20'">
                     <span class="text-xs font-medium opacity-80">{{ day.shortDate }}</span>
@@ -122,10 +124,10 @@
                     </div>
 
                     <!-- 航班卡片 -->
-                    <div class="mb-6">
-                        <div v-if="currentDay.flight" class="relative bg-gradient-to-r from-blue-600 to-teal-500 rounded-2xl text-white shadow-lg overflow-hidden">
-                            <div class="absolute -left-3 top-1/2 -translate-y-1/2 w-6 h-6 bg-slate-50 rounded-full z-10"></div>
-                            <div class="absolute -right-3 top-1/2 -translate-y-1/2 w-6 h-6 bg-slate-50 rounded-full z-10"></div>
+                    <div class="mb-4">
+                        <div v-if="currentDay.flight" class="relative bg-gradient-to-r from-blue-600 to-teal-500 rounded-2xl text-white shadow-md overflow-hidden">
+                            <div class="absolute -left-3 top-1/2 -translate-y-1/2 w-6 h-6 bg-[#F8FAFC] rounded-full z-10"></div>
+                            <div class="absolute -right-3 top-1/2 -translate-y-1/2 w-6 h-6 bg-[#F8FAFC] rounded-full z-10"></div>
                             <div class="p-4 relative z-0">
                                 <button @click="toggleFlightCard" class="absolute top-2 right-2 text-white/50 hover:text-white hover:bg-white/20 rounded-full p-1 transition"><i class="ph-bold ph-x"></i></button>
                                 <div class="flex justify-between items-center mb-1 pt-2">
@@ -147,21 +149,45 @@
                                                 <option value="1" class="text-slate-800">+1天 (隔日)</option>
                                                 <option value="-1" class="text-slate-800">-1天 (前日)</option>
                                             </select>
-                                            <div v-if="currentDay.flight.arrivalOffset != 0" class="absolute -top-8 right-0 bg-red-500 text-white text-[9px] px-1.5 py-0.5 rounded shadow font-bold animate-pulse">
-                                                {{ currentDay.flight.arrivalOffset > 0 ? '+1' : '-1' }}
-                                            </div>
                                         </div>
                                         <input v-model="currentDay.flight.endAirport" class="text-sm font-bold opacity-90 bg-transparent border-none text-center w-full text-teal-100 placeholder-white/50 focus:ring-0 uppercase p-0" placeholder="NRT">
                                     </div>
                                 </div>
                             </div>
                         </div>
-                        <button v-else @click="toggleFlightCard" class="w-full py-3 border-2 border-dashed border-slate-300 rounded-2xl text-slate-400 hover:border-teal-400 hover:text-teal-500 hover:bg-teal-50/50 transition flex items-center justify-center gap-2 group">
+                        <button v-else @click="toggleFlightCard" class="w-full py-2.5 border-2 border-dashed border-slate-300 rounded-2xl text-slate-400 hover:border-teal-400 hover:text-teal-500 hover:bg-teal-50/50 transition flex items-center justify-center gap-2 group">
                             <i class="ph-bold ph-airplane-tilt text-lg group-hover:scale-110 transition-transform"></i>
                             <span class="text-sm font-bold">新增當日航班資訊</span>
                         </button>
                     </div>
 
+                    <!-- ✨ 全新功能：住宿卡片 -->
+                    <div class="mb-6">
+                        <div v-if="currentDay.accommodation" class="relative bg-gradient-to-r from-purple-600 to-indigo-500 rounded-2xl text-white shadow-md overflow-hidden">
+                            <div class="p-4 relative z-0">
+                                <button @click="toggleAccommodation" class="absolute top-2 right-2 text-white/50 hover:text-white hover:bg-white/20 rounded-full p-1 transition"><i class="ph-bold ph-x"></i></button>
+                                <div class="flex items-center gap-3 mb-2">
+                                    <div class="bg-white/20 p-2.5 rounded-xl"><i class="ph-fill ph-bed text-2xl"></i></div>
+                                    <div class="flex-1 min-w-0">
+                                        <div class="text-[10px] text-purple-100 mb-0.5 font-bold tracking-wider">住宿地點</div>
+                                        <input v-model="currentDay.accommodation.name" class="font-bold text-lg bg-transparent border-none p-0 focus:ring-0 w-full text-white placeholder-white/50" placeholder="輸入飯店或民宿名稱...">
+                                    </div>
+                                </div>
+                                <div class="flex items-center gap-2 mt-3 bg-black/20 rounded-xl p-2.5">
+                                    <i class="ph-fill ph-map-pin text-purple-200"></i>
+                                    <input v-model="currentDay.accommodation.address" class="text-sm bg-transparent border-none p-0 focus:ring-0 w-full text-indigo-50 placeholder-indigo-200/50" placeholder="詳細地址 (點擊右側可複製/導航)">
+                                    <button @click="copyText(currentDay.accommodation.address)" class="p-1.5 bg-white/10 hover:bg-white/30 rounded-lg transition text-white shrink-0" title="複製地址"><i class="ph-bold ph-copy"></i></button>
+                                    <a :href="getGoogleMapLink(currentDay.accommodation.address)" target="_blank" class="p-1.5 bg-white/10 hover:bg-white/30 rounded-lg transition text-white shrink-0" title="Google 導航"><i class="ph-bold ph-navigation-arrow"></i></a>
+                                </div>
+                            </div>
+                        </div>
+                        <button v-else @click="toggleAccommodation" class="w-full py-2.5 border-2 border-dashed border-slate-300 rounded-2xl text-slate-400 hover:border-purple-400 hover:text-purple-500 hover:bg-purple-50/50 transition flex items-center justify-center gap-2 group">
+                            <i class="ph-bold ph-bed text-lg group-hover:scale-110 transition-transform"></i>
+                            <span class="text-sm font-bold">新增當日住宿資訊</span>
+                        </button>
+                    </div>
+
+                    <!-- 行程列表 -->
                     <div class="relative pl-4 border-l-2 border-teal-100 space-y-8">
                         <div v-for="(item, idx) in currentDay.items" :key="idx" class="relative group">
                             <div class="absolute -left-[21px] top-3 w-3 h-3 rounded-full border-2 border-white shadow-sm" :class="getDotColor(item.type)"></div>
@@ -196,19 +222,12 @@
                                             </div>
                                         </div>
                                         
-                                        <!-- 排序與操作按鈕 -->
+                                        <!-- ✨ 更新區塊：排序與操作按鈕 -->
                                         <div class="flex flex-col gap-1 items-center justify-center pl-2 border-l border-slate-100">
-                                            <!-- 上移按鈕 -->
-                                            <button @click="moveItem(idx, -1)" :disabled="idx === 0" :class="idx === 0 ? 'opacity-0 cursor-default' : 'hover:text-teal-600 hover:bg-teal-50 text-slate-300'" class="p-1 rounded cursor-pointer transition-colors"><i class="ph-bold ph-caret-up text-lg"></i></button>
-                                            
-                                            <!-- 導航按鈕 -->
+                                            <button @click="moveItem(idx, -1)" :disabled="idx === 0" :class="idx === 0 ? 'opacity-0 cursor-default' : 'hover:text-teal-600 hover:bg-teal-50 text-slate-300'" class="p-1 rounded cursor-pointer transition-colors" title="向上移動"><i class="ph-bold ph-caret-up text-lg"></i></button>
                                             <a :href="getGoogleMapLink(item.location)" target="_blank" class="text-teal-500 hover:bg-teal-50 p-1.5 rounded-full" title="Google 導航"><i class="ph-bold ph-navigation-arrow"></i></a>
-                                            
-                                            <!-- 刪除按鈕 -->
                                             <button @click="removeItem(idx)" class="text-red-300 hover:text-white hover:bg-red-500 p-1.5 rounded-full transition-colors" title="刪除行程"><i class="ph-bold ph-trash"></i></button>
-                                            
-                                            <!-- 下移按鈕 -->
-                                            <button @click="moveItem(idx, 1)" :disabled="idx === currentDay.items.length - 1" :class="idx === currentDay.items.length - 1 ? 'opacity-0 cursor-default' : 'hover:text-teal-600 hover:bg-teal-50 text-slate-300'" class="p-1 rounded cursor-pointer transition-colors"><i class="ph-bold ph-caret-down text-lg"></i></button>
+                                            <button @click="moveItem(idx, 1)" :disabled="idx === currentDay.items.length - 1" :class="idx === currentDay.items.length - 1 ? 'opacity-0 cursor-default' : 'hover:text-teal-600 hover:bg-teal-50 text-slate-300'" class="p-1 rounded cursor-pointer transition-colors" title="向下移動"><i class="ph-bold ph-caret-down text-lg"></i></button>
                                         </div>
                                     </div>
                                     
@@ -224,7 +243,6 @@
                                                 搜尋
                                             </button>
                                         </div>
-                                        
                                         <div v-if="recommendationsMap[`${currentDayIdx}-${idx}`] && recommendationsMap[`${currentDayIdx}-${idx}`].length > 0" class="flex flex-wrap gap-2 mt-1">
                                             <button v-for="rec in recommendationsMap[`${currentDayIdx}-${idx}`]" :key="rec.name" @click="applyRecommendation(item, rec)" class="text-[10px] px-2 py-1.5 bg-white border border-orange-200 rounded-lg text-slate-600 hover:bg-orange-500 hover:text-white hover:border-orange-500 transition shadow-sm flex flex-col items-start gap-0.5 max-w-[120px] truncate">
                                                 <span class="font-bold truncate w-full text-left">{{ rec.name }}</span>
@@ -434,6 +452,7 @@
                         <h2 class="text-xl font-bold text-slate-800">我的旅程</h2>
                         <button @click="showTripMenu = false" class="text-slate-400 hover:text-slate-600"><i class="ph-bold ph-x text-xl"></i></button>
                     </div>
+                    <!-- ✨ 匯出按鈕就在這個區塊 -->
                     <div class="flex gap-2 mb-6">
                         <button @click="createNewTrip" class="flex-1 py-3 border-2 border-dashed border-teal-400 text-teal-600 rounded-xl font-bold hover:bg-teal-50 flex items-center justify-center gap-2 transition-colors">
                             <i class="ph-bold ph-plus-circle"></i> 建立新旅程
@@ -517,15 +536,474 @@
         const db = getFirestore(fbApp);
         const auth = getAuth(fbApp);
 
-        // 預設行程 (用來做為第一次生成的備案)
-        const defaultEuroTripData = {
-            id: 'trip_euro_2026_spring', destination: '義大利與西班牙', startDate: '2026-03-21', daysCount: 13,
-            rate: 34.5, currency: 'EUR', langCode: 'it', langName: '義大利文', users: '我, 旅伴', expenses: [],
-            days: [
-                { date: "03/21 (六)", shortDate: "03/21", fullDate: "2026-03-21", title: "啟程與羅馬市區漫遊", flight: { startTime: "18:20", startAirport: "TPE", number: "AUH 轉機", endTime: "05:40", endAirport: "FCO", arrivalOffset: 1 }, items: [{ time: "06:40", type: "transport", activity: "機場快捷 前往飯店", location: "Roma Termini", note: "Fiumicino Aeroporto出發, €14/人 (32mins)" }, { time: "10:00", type: "spot", activity: "特雷維噴泉", location: "Trevi Fountain, Rome", note: "投1個硬幣重回羅馬" }] },
-                { date: "03/22 (日)", shortDate: "03/22", fullDate: "2026-03-22", title: "古羅馬巡禮", flight: null, items: [{ time: "10:00", type: "spot", activity: "羅馬競技場", location: "Colosseum, Rome", note: "" }] }
-            ] // 僅示意節錄，系統會自動同步雲端完整版
-        };
+        // 預設行程 (如果需要更新，請點擊左側選單的匯出按鈕，並貼上覆蓋這個大括號的內容)
+        const defaultEuroTripData = 
+        {
+            "id": "trip_euro_2026_spring",
+            "destination": "義大利/西班牙",
+            "startDate": "2026-03-21",
+            "daysCount": 13,
+            "rate": 37.04,
+            "currency": "EUR",
+            "langCode": "it",
+            "langName": "義大利文",
+            "users": "我, 旅伴",
+            "expenses": [],
+            "days": [
+                {
+                    "shortDate": "03/21",
+                    "items": [
+                        {
+                            "location": "Rome Termini",
+                            "type": "transport",
+                            "activity": "機場快捷 前往飯店",
+                            "time": "06:40",
+                            "note": "Fiumicino Aeroporto出發, €14/人 (32mins)"
+                        },
+                        {
+                            "note": "",
+                            "time": "10:00",
+                            "location": "Trevi Fountain, Rome",
+                            "type": "spot",
+                            "activity": "特雷維噴泉"
+                        },
+                        {
+                            "activity": "西班牙階梯",
+                            "type": "spot",
+                            "location": "Spanish Steps, Rome",
+                            "note": "奧黛麗赫本羅馬假期取景地",
+                            "time": "11:30"
+                        },
+                        {
+                            "time": "14:00",
+                            "note": "營業時間 09:00–19:00",
+                            "type": "spot",
+                            "location": "Pantheon, Rome",
+                            "activity": "萬神殿"
+                        },
+                        {
+                            "time": "15:30",
+                            "note": "15:30 colosseo 顶层",
+                            "activity": "羅馬競技場 (頂層)",
+                            "type": "spot",
+                            "location": "Colosseum, Rome"
+                        },
+                        {
+                            "time": "17:30",
+                            "note": "約下午四點半購票等日落，羅馬假期景點",
+                            "location": "Castel Sant'Angelo, Rome",
+                            "type": "spot",
+                            "activity": "聖天使堡"
+                        }
+                    ],
+                    "flight": {
+                        "startTime": "18:20",
+                        "number": "AUH 轉機",
+                        "endAirport": "FCO",
+                        "arrivalOffset": 1,
+                        "endTime": "05:40",
+                        "startAirport": "TPE"
+                    },
+                    "title": "啟程與羅馬市區漫遊",
+                    "fullDate": "2026-03-21",
+                    "date": "03/21 (六)"
+                },
+                {
+                    "shortDate": "03/22",
+                    "items": [
+                        {
+                            "type": "spot",
+                            "location": "Roman Forum, Rome",
+                            "activity": "古羅馬廣場",
+                            "time": "10:00",
+                            "note": ""
+                        },
+                        {
+                            "note": "",
+                            "time": "15:00",
+                            "type": "spot",
+                            "location": "Baths of Caracalla, Rome",
+                            "activity": "卡拉卡拉浴場"
+                        }
+                    ],
+                    "fullDate": "2026-03-22",
+                    "date": "03/22 (日)",
+                    "flight": null,
+                    "title": "古羅馬巡禮"
+                },
+                {
+                    "shortDate": "03/23",
+                    "items": [
+                        {
+                            "time": "08:30",
+                            "note": "大穹頂，仰望米開朗基羅最後鉅作",
+                            "activity": "聖彼得大教堂",
+                            "location": "St. Peter's Basilica",
+                            "type": "spot"
+                        },
+                        {
+                            "time": "11:30",
+                            "note": "記得先拍旋轉樓梯！必看西斯汀禮拜堂《最後的審判》《創世紀》",
+                            "location": "Vatican Museums",
+                            "type": "spot",
+                            "activity": "梵蒂岡博物館"
+                        }
+                    ],
+                    "fullDate": "2026-03-23",
+                    "date": "03/23 (一)",
+                    "flight": null,
+                    "title": "梵蒂岡神聖之旅"
+                },
+                {
+                    "shortDate": "03/24",
+                    "items": [
+                        {
+                            "note": "7:55 - 9:30 Rome → Florance",
+                            "time": "07:55",
+                            "location": "Firenze Santa Maria Novella",
+                            "type": "transport",
+                            "activity": "搭高鐵前往佛羅倫斯"
+                        },
+                        {
+                            "location": "Cathedral of Santa Maria del Fiore",
+                            "type": "spot",
+                            "activity": "聖母百花大教堂",
+                            "note": "15:45-16:30. 不能露腿肩、涼鞋",
+                            "time": "15:45"
+                        },
+                        {
+                            "activity": "聖十字聖殿",
+                            "location": "Basilica of Santa Croce, Florence",
+                            "type": "spot",
+                            "time": "17:00",
+                            "note": "米開朗基羅、伽利略的安息地 (17:00最後入場)"
+                        },
+                        {
+                            "time": "17:30",
+                            "note": "看夕陽絕佳地點",
+                            "activity": "米開朗琪羅廣場",
+                            "location": "Piazzale Michelangelo",
+                            "type": "spot"
+                        },
+                        {
+                            "location": "Trattoria Zà Zà",
+                            "type": "food",
+                            "activity": "Trattoria Zà Zà",
+                            "note": "佛羅倫斯丁骨牛排名店",
+                            "time": "19:30"
+                        }
+                    ],
+                    "flight": null,
+                    "title": "前進佛羅倫斯",
+                    "fullDate": "2026-03-24",
+                    "date": "03/24 (二)"
+                },
+                {
+                    "shortDate": "03/25",
+                    "items": [
+                        {
+                            "activity": "學院美術館-大衛像",
+                            "location": "Galleria dell'Accademia",
+                            "type": "spot",
+                            "note": "米開朗基羅神級雕刻",
+                            "time": "08:45"
+                        },
+                        {
+                            "activity": "All'Antico Vinaio 帕尼尼",
+                            "location": "All'Antico Vinaio",
+                            "type": "food",
+                            "note": "人氣午餐",
+                            "time": "10:00"
+                        },
+                        {
+                            "note": "看米開朗基羅親筆簽名雕刻與拉斐爾作品",
+                            "time": "11:00",
+                            "location": "Medici Chapels",
+                            "type": "spot",
+                            "activity": "麥地奇家族禮拜堂"
+                        },
+                        {
+                            "type": "spot",
+                            "location": "Uffizi Gallery",
+                            "activity": "烏菲茲美術館",
+                            "time": "14:00",
+                            "note": ""
+                        },
+                        {
+                            "time": "16:00",
+                            "note": "「算什麼男人」MV取景地打卡",
+                            "location": "Ponte Vecchio",
+                            "type": "spot",
+                            "activity": "老橋"
+                        },
+                        {
+                            "activity": "Gelateria Della Passera",
+                            "type": "food",
+                            "location": "Gelateria Della Passera",
+                            "note": "🍦全球25家最佳冰淇淋店",
+                            "time": "16:00"
+                        }
+                    ],
+                    "flight": null,
+                    "title": "文藝復興藝術之旅",
+                    "fullDate": "2026-03-25",
+                    "date": "03/25 (三)"
+                },
+                {
+                    "shortDate": "03/26",
+                    "items": [
+                        {
+                            "activity": "火車前往比薩",
+                            "type": "transport",
+                            "location": "Pisa S. Rossore",
+                            "note": "先搭到Pisa Centrale再轉區間車到Pisa S.Rossore比較近",
+                            "time": "09:00"
+                        },
+                        {
+                            "note": "走路10分鐘即可抵達",
+                            "time": "10:30",
+                            "activity": "比薩斜塔",
+                            "type": "spot",
+                            "location": "Leaning Tower of Pisa"
+                        }
+                    ],
+                    "flight": null,
+                    "title": "比薩斜塔半日遊",
+                    "fullDate": "2026-03-26",
+                    "date": "03/26 (四)"
+                },
+                {
+                    "title": "米蘭快閃與前往西班牙",
+                    "flight": {
+                        "startTime": "21:55",
+                        "endAirport": "BCN",
+                        "arrivalOffset": 0,
+                        "number": "飛往西班牙",
+                        "endTime": "23:35",
+                        "startAirport": "MXP"
+                    },
+                    "date": "03/27 (五)",
+                    "fullDate": "2026-03-27",
+                    "items": [
+                        {
+                            "note": "7:25-9:20 Firenze S.M.Novella → Milano Centrale",
+                            "time": "07:25",
+                            "activity": "火車前往米蘭",
+                            "type": "transport",
+                            "location": "Milano Centrale"
+                        },
+                        {
+                            "location": "Milan Cadorna",
+                            "type": "transport",
+                            "activity": "轉乘至Cadorna與寄放行李",
+                            "time": "09:30",
+                            "note": "買晚上的票去機場/行李寄放"
+                        },
+                        {
+                            "note": "可能要預約10:30-11:00場次",
+                            "time": "10:30",
+                            "activity": "米蘭大教堂",
+                            "type": "spot",
+                            "location": "Duomo di Milano"
+                        },
+                        {
+                            "type": "spot",
+                            "location": "Santa Maria delle Grazie",
+                            "activity": "最後的晚餐",
+                            "note": "3/18 24:00前發結果",
+                            "time": "14:15"
+                        },
+                        {
+                            "time": "19:15",
+                            "note": "19:27-20:04 or 19:56-20:34",
+                            "activity": "機場快線前往米蘭機場",
+                            "location": "Milan Cardona",
+                            "type": "transport"
+                        },
+                        {
+                            "time": "20:30",
+                            "note": "21:55 準備搭機，手提10kg/托運23kg",
+                            "activity": "Milan Airport",
+                            "location": "Milan Airport",
+                            "type": "spot"
+                        }
+                    ],
+                    "shortDate": "03/27"
+                },
+                {
+                    "date": "03/28 (六)",
+                    "fullDate": "2026-03-28",
+                    "title": "巴塞隆納精華與聖家堂",
+                    "flight": null,
+                    "items": [
+                        {
+                            "type": "spot",
+                            "location": "La Rambla, Barcelona",
+                            "activity": "蘭布拉斯大道",
+                            "time": "10:00",
+                            "note": "預計停留3小時以上，超好逛"
+                        },
+                        {
+                            "activity": "博蓋利亞市場",
+                            "type": "spot",
+                            "location": "Mercado de La Boqueria",
+                            "note": "週日休市 一定要今天去！！",
+                            "time": "11:30"
+                        },
+                        {
+                            "time": "13:00",
+                            "note": "",
+                            "location": "Amorino, Barcelona",
+                            "type": "food",
+                            "activity": "Amorino 小天使花花冰淇淋"
+                        },
+                        {
+                            "location": "Sagrada Familia",
+                            "type": "spot",
+                            "activity": "聖家堂進場",
+                            "note": "16:45 英文 Guide Tour",
+                            "time": "16:00"
+                        },
+                        {
+                            "note": "Carrer de la Marina 團體導覽入口",
+                            "time": "16:45",
+                            "activity": "聖家堂 英文 Guide Tour",
+                            "type": "spot",
+                            "location": "Sagrada Familia"
+                        }
+                    ],
+                    "shortDate": "03/28"
+                },
+                {
+                    "items": [
+                        {
+                            "type": "spot",
+                            "location": "Casa Milà",
+                            "activity": "米拉之家 日出場",
+                            "time": "08:30",
+                            "note": ""
+                        },
+                        {
+                            "time": "13:45",
+                            "note": "1.5hr",
+                            "type": "spot",
+                            "location": "Casa Batlló",
+                            "activity": "巴特婁之家"
+                        },
+                        {
+                            "activity": "畢卡索美術館",
+                            "location": "Museu Picasso de Barcelona",
+                            "type": "spot",
+                            "time": "",
+                            "note": "還沒買票 10:00-19:00 15分鐘一場"
+                        },
+                        {
+                            "type": "spot",
+                            "location": "Montjuic Cable Car",
+                            "activity": "蒙特惠奇山纜車",
+                            "time": "17:30",
+                            "note": "看夕陽 (當日買票）"
+                        }
+                    ],
+                    "shortDate": "03/29",
+                    "title": "高第建築與蒙特惠奇山",
+                    "flight": null,
+                    "date": "03/29 (日)",
+                    "fullDate": "2026-03-29"
+                },
+                {
+                    "items": [
+                        {
+                            "location": "Recinte Modernista de Sant Pau Sant Pau Recinte Modernista",
+                            "type": "spot",
+                            "activity": "聖十字聖保羅醫院",
+                            "time": "10:00",
+                            "note": ""
+                        },
+                        {
+                            "activity": "Cañete (午餐)",
+                            "type": "food",
+                            "location": "Carrer de la Unió, 17, 08001 Barcelona",
+                            "note": "3 personas",
+                            "time": "13:00"
+                        },
+                        {
+                            "time": "16:00",
+                            "note": "當日買票 看幾點去",
+                            "type": "spot",
+                            "location": "Park Güell",
+                            "activity": "奎爾公園"
+                        }
+                    ],
+                    "shortDate": "03/30",
+                    "title": "奎爾公園與聖十字保羅醫院",
+                    "flight": null,
+                    "date": "03/30 (一)",
+                    "fullDate": "2026-03-30"
+                },
+                {
+                    "flight": {
+                        "arrivalOffset": 0,
+                        "number": "IB5152",
+                        "endAirport": "FCO",
+                        "startAirport": "BCN T1",
+                        "endTime": "14:45",
+                        "startTime": "12:55"
+                    },
+                    "title": "揮別西班牙",
+                    "fullDate": "2026-03-31",
+                    "date": "03/31 (二)",
+                    "shortDate": "03/31",
+                    "items": [
+                        {
+                            "type": "food",
+                            "location": "Barcelona",
+                            "activity": "吃早餐",
+                            "note": "",
+                            "time": "08:30"
+                        },
+                        {
+                            "activity": "出門前往機場",
+                            "location": "Barcelona Airport T1",
+                            "type": "transport",
+                            "time": "10:00",
+                            "note": "11:00 抵達機場報到"
+                        }
+                    ]
+                },
+                {
+                    "flight": {
+                        "endTime": "05:40",
+                        "type": "arrival",
+                        "startAirport": "Fco",
+                        "number": "FLIGHT",
+                        "endAirport": "TPe T2",
+                        "arrivalOffset": 1,
+                        "startTime": "11:00"
+                    },
+                    "title": "返程待機",
+                    "fullDate": "2026-04-01",
+                    "date": "04/01 (三)",
+                    "shortDate": "04/01",
+                    "items": [
+                        {
+                            "activity": "飯店前往機場",
+                            "location": "FCO",
+                            "type": "transport",
+                            "time": "08:00",
+                            "note": "7:00 - 8:00 抵達"
+                        },
+                        {
+                            "note": "FCO to TPE",
+                            "time": "11:00",
+                            "location": "Rome Airport",
+                            "type": "flight",
+                            "activity": "準備登機回台"
+                        }
+                    ]
+                }
+            ]
+        }
 
         createApp({
             setup() {
@@ -559,11 +1037,11 @@
                 // Firebase 同步控制
                 const firebaseReady = ref(false);
                 let unsubscribeSnapshot = null;
-                let isRemoteUpdating = false;
+                let isRemoteUpdating = false; // 🛡️ 終極防護：防止本地錯誤覆蓋雲端的安全鎖
                 let mapInstance = null;
 
                 // --- Computed ---
-                const currentDay = computed(() => days.value[currentDayIdx.value] || {items:[], flight:null, date:'', title:'', shortDate:''});
+                const currentDay = computed(() => days.value[currentDayIdx.value] || {items:[], flight:null, accommodation: null, date:'', title:'', shortDate:''});
                 const totalExpense = computed(() => expenses.value.reduce((sum, item) => sum + (item.amount||0), 0));
                 
                 // 每日支出總計
@@ -632,6 +1110,27 @@
                      if (currentDay.value.flight) { if(confirm('移除航班?')) currentDay.value.flight = null; }
                      else { currentDay.value.flight = { type: 'arrival', startTime: '10:00', startAirport: 'TPE', number: 'FLIGHT', endTime: '14:00', endAirport: 'DEST', arrivalOffset: 0 }; }
                 };
+                // ✨ 住宿卡片切換
+                const toggleAccommodation = () => {
+                    if (currentDay.value.accommodation) {
+                        if(confirm('移除住宿資訊?')) currentDay.value.accommodation = null;
+                    } else {
+                        currentDay.value.accommodation = { name: '', address: '' };
+                    }
+                };
+                // ✨ 一鍵複製地址
+                const copyText = (text) => {
+                    if (!text) return;
+                    const el = document.createElement('textarea');
+                    el.value = text;
+                    document.body.appendChild(el);
+                    el.select();
+                    document.execCommand('copy');
+                    document.body.removeChild(el);
+                    syncStatus.value = { text: '✅ 已複製地址', icon: 'ph-bold ph-check-circle text-green-400' };
+                    setTimeout(() => { syncStatus.value = null; }, 2000);
+                };
+
                 const getDotColor = (t) => t==='food'?'bg-orange-400':t==='shop'?'bg-pink-400':t==='flight'?'bg-blue-500':'bg-teal-500';
                 const updateParticipants = () => { participants.value = participantsStr.value.split(',').map(s=>s.trim()).filter(s=>s); };
                 const updateDate = (e, day) => {
@@ -649,6 +1148,7 @@
                 const addItem = () => currentDay.value.items.push({ time: '', type: 'spot', activity: '', location: '', note: '' });
                 const removeItem = (idx) => currentDay.value.items.splice(idx, 1);
                 
+                // ✨ 排序：上移下移功能
                 const moveItem = (idx, direction) => {
                     const newIdx = idx + direction;
                     if (newIdx >= 0 && newIdx < currentDay.value.items.length) {
@@ -736,13 +1236,10 @@
                     
                     if(unsubscribeSnapshot) { unsubscribeSnapshot(); unsubscribeSnapshot = null; }
                     
-                    // ✨ 關鍵防護 1：在載入本機舊資料前，先開啟「防護罩 (isRemoteUpdating)」，避免觸發自動存檔
+                    // 🛡️ 關鍵防護 1：在載入本機舊資料前，先開啟防護罩，避免意外觸發自動存檔
                     isRemoteUpdating = true;
                     loadFromLocal(id);
-                    // 等待資料載入完畢後，再把防護罩關掉
-                    nextTick(() => {
-                        isRemoteUpdating = false;
-                    });
+                    nextTick(() => { isRemoteUpdating = false; });
 
                     if (!firebaseReady.value) return;
                     
@@ -752,7 +1249,7 @@
                         const tripRef = doc(db, 'travel_plans', id);
                         unsubscribeSnapshot = onSnapshot(tripRef, (docSnap) => {
                             if (docSnap.exists()) {
-                                isRemoteUpdating = true; // 防止觸發本地 Watcher 回寫
+                                isRemoteUpdating = true; // 防止觸發 Watcher 覆蓋
                                 const data = docSnap.data();
                                 
                                 setup.value = data.setup || setup.value;
@@ -762,7 +1259,7 @@
                                 if(data.rate) exchangeRate.value = data.rate;
                                 
                                 fetchWeather(setup.value.destination);
-                                saveToLocal(); // 更新本地
+                                saveToLocal();
                                 
                                 nextTick(() => { isRemoteUpdating = false; syncStatus.value = null; });
                             }
@@ -784,7 +1281,7 @@
                         const fullDate = `${curr.getFullYear()}-${mm < 10 ? '0'+mm : mm}-${dd < 10 ? '0'+dd : dd}`;
                         newDays.push({
                             date: `${mm < 10 ? '0'+mm : mm}/${dd < 10 ? '0'+dd : dd} (${dNames[curr.getDay()]})`,
-                            shortDate: `${mm}/${dd}`, fullDate: fullDate, title: i===0?'抵達 & 探索':'行程規劃', items: [], flight: null
+                            shortDate: `${mm}/${dd}`, fullDate: fullDate, title: i===0?'抵達 & 探索':'行程規劃', accommodation: null, items: [], flight: null
                         });
                     }
                     
@@ -815,6 +1312,7 @@
                     }
                 };
 
+                // ✨ 匯出當前行程代碼
                 const exportCurrentTrip = () => {
                     if (!currentTripId.value) return;
                     const exportObj = {
@@ -865,7 +1363,7 @@
                             const tripRef = doc(db, 'travel_plans', targetId);
                             const docSnap = await getDoc(tripRef);
                             
-                            // ✨ 關鍵防護 2：在確認 Firebase 狀態前，先開啟防護罩
+                            // 🛡️ 關鍵防護 2：在確認 Firebase 狀態前，先開啟防護罩
                             isRemoteUpdating = true; 
 
                             if (docSnap.exists()) {
@@ -892,14 +1390,11 @@
                                     updateParticipants();
                                     saveToLocal();
                                     
-                                    // 只有當 Firebase 是空的且本地也是空的時候，才解除防護並上傳預設資料
                                     isRemoteUpdating = false; 
                                     await saveTripToFirebase();
-                                    // 提早 return 避免後面的程式碼打亂順序
                                     isRemoteUpdating = true; 
                                 }
                             }
-                            // 所有的非同步與判定做完後，才安全關閉防護罩
                             isRemoteUpdating = false;
                         } catch(e) {
                             console.error("初次抓取失敗，退回本地", e);
@@ -911,7 +1406,7 @@
                     
                     let saveTimeout = null;
                     watch([days, expenses, exchangeRate, participantsStr, setup], () => {
-                        // 如果在更新防護罩期間，直接擋掉，絕對不上傳
+                        // 如果在防護罩開啟期間，絕對不上傳
                         if (isRemoteUpdating || !currentTripId.value) return;
                         
                         saveToLocal();
@@ -970,6 +1465,7 @@
                     isMapLoading, userLocation, initMap, centerOnUser,
                     updateDate, showSetupModal, setup, initTrip, weatherDisplay, detectRate, isRateLoading, currencyLabel, currencySymbol, toggleFlightCard, getDotColor,
                     showTripMenu, tripList, createNewTrip, switchTrip, deleteTrip, currentTripId, exportCurrentTrip,
+                    toggleAccommodation, copyText, // 導出新增的住宿功能
                     searchNearby, recommendationsMap, isSearchingRecs, applyRecommendation, searchTargetIndex
                 };
             }
