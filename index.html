@@ -155,55 +155,31 @@
                                 </div>
                             </div>
                         </div>
-                        <button v-else @click="toggleFlightCard" class="w-full py-2.5 border-2 border-dashed border-slate-300 rounded-2xl text-slate-400 hover:border-teal-400 hover:text-teal-500 hover:bg-teal-50/50 transition flex items-center justify-center gap-2 group">
+                        <button v-else @click="toggleFlightCard" class="w-full py-2.5 border-2 border-dashed border-slate-300 rounded-2xl text-slate-400 hover:border-teal-400 hover:text-teal-500 hover:bg-teal-50/50 transition flex items-center justify-center gap-2 group mb-6">
                             <i class="ph-bold ph-airplane-tilt text-lg group-hover:scale-110 transition-transform"></i>
                             <span class="text-sm font-bold">新增當日航班資訊</span>
                         </button>
                     </div>
 
-                    <!-- ✨ 全新功能：住宿卡片 -->
-                    <div class="mb-6">
-                        <div v-if="currentDay.accommodation" class="relative bg-gradient-to-r from-purple-600 to-indigo-500 rounded-2xl text-white shadow-md overflow-hidden">
-                            <div class="p-4 relative z-0">
-                                <button @click="toggleAccommodation" class="absolute top-2 right-2 text-white/50 hover:text-white hover:bg-white/20 rounded-full p-1 transition"><i class="ph-bold ph-x"></i></button>
-                                <div class="flex items-center gap-3 mb-2">
-                                    <div class="bg-white/20 p-2.5 rounded-xl"><i class="ph-fill ph-bed text-2xl"></i></div>
-                                    <div class="flex-1 min-w-0">
-                                        <div class="text-[10px] text-purple-100 mb-0.5 font-bold tracking-wider">住宿地點</div>
-                                        <input v-model="currentDay.accommodation.name" class="font-bold text-lg bg-transparent border-none p-0 focus:ring-0 w-full text-white placeholder-white/50" placeholder="輸入飯店或民宿名稱...">
-                                    </div>
-                                </div>
-                                <div class="flex items-center gap-2 mt-3 bg-black/20 rounded-xl p-2.5">
-                                    <i class="ph-fill ph-map-pin text-purple-200"></i>
-                                    <input v-model="currentDay.accommodation.address" class="text-sm bg-transparent border-none p-0 focus:ring-0 w-full text-indigo-50 placeholder-indigo-200/50" placeholder="詳細地址 (點擊右側可複製/導航)">
-                                    <button @click="copyText(currentDay.accommodation.address)" class="p-1.5 bg-white/10 hover:bg-white/30 rounded-lg transition text-white shrink-0" title="複製地址"><i class="ph-bold ph-copy"></i></button>
-                                    <a :href="getGoogleMapLink(currentDay.accommodation.address)" target="_blank" class="p-1.5 bg-white/10 hover:bg-white/30 rounded-lg transition text-white shrink-0" title="Google 導航"><i class="ph-bold ph-navigation-arrow"></i></a>
-                                </div>
-                            </div>
-                        </div>
-                        <button v-else @click="toggleAccommodation" class="w-full py-2.5 border-2 border-dashed border-slate-300 rounded-2xl text-slate-400 hover:border-purple-400 hover:text-purple-500 hover:bg-purple-50/50 transition flex items-center justify-center gap-2 group">
-                            <i class="ph-bold ph-bed text-lg group-hover:scale-110 transition-transform"></i>
-                            <span class="text-sm font-bold">新增當日住宿資訊</span>
-                        </button>
-                    </div>
-
                     <!-- 行程列表 -->
-                    <div class="relative pl-4 border-l-2 border-teal-100 space-y-8">
+                    <div class="relative pl-4 border-l-2 border-teal-100 space-y-8 mt-2">
                         <div v-for="(item, idx) in currentDay.items" :key="idx" class="relative group">
                             <div class="absolute -left-[21px] top-3 w-3 h-3 rounded-full border-2 border-white shadow-sm" :class="getDotColor(item.type)"></div>
                             <div class="bg-white p-3 rounded-xl shadow-sm border border-slate-100 hover:shadow-md transition-shadow">
                                 <div class="flex flex-col gap-2">
                                     <div class="flex items-start gap-3">
-                                        <!-- 時間輸入塊 -->
+                                        <!-- 時間與類別輸入塊 -->
                                         <div class="flex flex-col items-center w-20 shrink-0 gap-2">
                                             <div class="relative flex flex-col items-center justify-center bg-slate-50 border border-slate-200 rounded-xl p-1 w-full h-16 cursor-pointer hover:bg-teal-50 hover:border-teal-200 transition group/time">
                                                 <span class="text-[10px] font-medium text-slate-400 group-hover/time:text-teal-400">{{ getTimePeriod(item.time) }}</span>
                                                 <span class="text-xl font-bold text-slate-700 group-hover/time:text-teal-600 leading-none font-mono tracking-tight">{{ item.time || '--:--' }}</span>
                                                 <input v-model="item.time" type="time" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10">
                                             </div>
+                                            <!-- ✨ 更新：加入「住宿」類別 -->
                                             <select v-model="item.type" class="text-[10px] bg-white border border-slate-200 rounded-md py-1 px-1 w-full text-center">
                                                 <option value="spot">📍 景點</option>
                                                 <option value="food">🍴 美食</option>
+                                                <option value="hotel">🏨 住宿</option>
                                                 <option value="shop">🛍️ 購物</option>
                                                 <option value="transport">🚇 交通</option>
                                                 <option value="flight">✈️ 航班</option>
@@ -214,7 +190,7 @@
                                             <input v-model="item.activity" class="block w-full font-bold text-slate-800 bg-transparent border-none p-0 focus:ring-0" placeholder="行程名稱...">
                                             <div class="flex items-center gap-1 mt-1">
                                                 <i class="ph-fill ph-map-pin text-teal-400 text-xs"></i>
-                                                <input v-model="item.location" class="flex-1 text-xs text-slate-500 bg-transparent border-none p-0 focus:ring-0 truncate" placeholder="輸入地點 (例如: 新宿)">
+                                                <input v-model="item.location" class="flex-1 text-xs text-slate-500 bg-transparent border-none p-0 focus:ring-0 truncate" placeholder="輸入地點或地址...">
                                             </div>
                                             <div class="flex items-center gap-1 mt-1">
                                                 <i class="ph-bold ph-info text-orange-400 text-xs"></i>
@@ -222,7 +198,7 @@
                                             </div>
                                         </div>
                                         
-                                        <!-- ✨ 更新區塊：排序與操作按鈕 -->
+                                        <!-- 排序與操作按鈕 -->
                                         <div class="flex flex-col gap-1 items-center justify-center pl-2 border-l border-slate-100">
                                             <button @click="moveItem(idx, -1)" :disabled="idx === 0" :class="idx === 0 ? 'opacity-0 cursor-default' : 'hover:text-teal-600 hover:bg-teal-50 text-slate-300'" class="p-1 rounded cursor-pointer transition-colors" title="向上移動"><i class="ph-bold ph-caret-up text-lg"></i></button>
                                             <a :href="getGoogleMapLink(item.location)" target="_blank" class="text-teal-500 hover:bg-teal-50 p-1.5 rounded-full" title="Google 導航"><i class="ph-bold ph-navigation-arrow"></i></a>
@@ -452,7 +428,6 @@
                         <h2 class="text-xl font-bold text-slate-800">我的旅程</h2>
                         <button @click="showTripMenu = false" class="text-slate-400 hover:text-slate-600"><i class="ph-bold ph-x text-xl"></i></button>
                     </div>
-                    <!-- ✨ 匯出按鈕就在這個區塊 -->
                     <div class="flex gap-2 mb-6">
                         <button @click="createNewTrip" class="flex-1 py-3 border-2 border-dashed border-teal-400 text-teal-600 rounded-xl font-bold hover:bg-teal-50 flex items-center justify-center gap-2 transition-colors">
                             <i class="ph-bold ph-plus-circle"></i> 建立新旅程
@@ -508,6 +483,30 @@
                     </div>
                     <button @click="initTrip" class="w-full bg-teal-600 hover:bg-teal-700 text-white font-bold py-3.5 rounded-xl shadow-lg transform active:scale-95 transition flex items-center justify-center gap-2 mt-2">開始規劃 <i class="ph-bold ph-arrow-right"></i></button>
                     <button v-if="tripList.length>0" @click="showSetupModal = false" class="w-full text-slate-400 text-xs py-2 hover:text-slate-600">取消</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 匯出資料專屬視窗 -->
+        <div v-if="showExportModal" class="absolute inset-0 bg-slate-800/90 backdrop-blur-sm z-[60] flex items-center justify-center p-4 animate-fade-in">
+            <div class="bg-white w-full max-w-lg rounded-2xl flex flex-col h-[80vh] shadow-2xl overflow-hidden">
+                <div class="p-4 bg-teal-600 text-white flex justify-between items-center shrink-0">
+                    <h2 class="font-bold flex items-center gap-2"><i class="ph-bold ph-export"></i> 匯出初始資料</h2>
+                    <button @click="showExportModal = false" class="hover:text-teal-200 transition-colors"><i class="ph-bold ph-x text-xl"></i></button>
+                </div>
+                <div class="p-4 flex-1 overflow-hidden flex flex-col bg-slate-50">
+                    <p class="text-[13px] text-slate-600 mb-3 font-medium leading-relaxed">
+                        請將下方內容完整複製，並覆蓋程式碼中 <code class="bg-slate-200 px-1 rounded text-teal-700">const defaultEuroTripData = { ... }</code> 的大括號部分：
+                    </p>
+                    <textarea v-model="exportDataStr" readonly class="flex-1 w-full p-4 bg-white border border-slate-300 rounded-xl text-xs font-mono text-slate-700 focus:outline-none resize-none hide-scroll shadow-inner leading-relaxed"></textarea>
+                </div>
+                <div class="p-4 border-t border-slate-200 flex gap-3 shrink-0 bg-white">
+                    <button @click="downloadJson" class="flex-1 py-3 bg-white border-2 border-teal-500 text-teal-600 rounded-xl font-bold hover:bg-teal-50 transition flex items-center justify-center gap-2">
+                        <i class="ph-bold ph-download-simple text-lg"></i> 下載檔案
+                    </button>
+                    <button @click="copyExportData" class="flex-1 py-3 bg-teal-600 text-white rounded-xl font-bold hover:bg-teal-700 transition flex items-center justify-center gap-2 shadow-md">
+                        <i class="ph-bold ph-copy text-lg"></i> 複製代碼
+                    </button>
                 </div>
             </div>
         </div>
@@ -1003,7 +1002,7 @@
                     ]
                 }
             ]
-        }
+        };
 
         createApp({
             setup() {
@@ -1013,6 +1012,10 @@
                 const tripList = ref([]);
                 const currentTripId = ref(null);
                 const showSetupModal = ref(false);
+                
+                // 匯出視窗的狀態
+                const showExportModal = ref(false);
+                const exportDataStr = ref('');
 
                 // 資料
                 const days = ref([]);
@@ -1041,7 +1044,7 @@
                 let mapInstance = null;
 
                 // --- Computed ---
-                const currentDay = computed(() => days.value[currentDayIdx.value] || {items:[], flight:null, accommodation: null, date:'', title:'', shortDate:''});
+                const currentDay = computed(() => days.value[currentDayIdx.value] || {items:[], flight:null, date:'', title:'', shortDate:''});
                 const totalExpense = computed(() => expenses.value.reduce((sum, item) => sum + (item.amount||0), 0));
                 
                 // 每日支出總計
@@ -1110,28 +1113,9 @@
                      if (currentDay.value.flight) { if(confirm('移除航班?')) currentDay.value.flight = null; }
                      else { currentDay.value.flight = { type: 'arrival', startTime: '10:00', startAirport: 'TPE', number: 'FLIGHT', endTime: '14:00', endAirport: 'DEST', arrivalOffset: 0 }; }
                 };
-                // ✨ 住宿卡片切換
-                const toggleAccommodation = () => {
-                    if (currentDay.value.accommodation) {
-                        if(confirm('移除住宿資訊?')) currentDay.value.accommodation = null;
-                    } else {
-                        currentDay.value.accommodation = { name: '', address: '' };
-                    }
-                };
-                // ✨ 一鍵複製地址
-                const copyText = (text) => {
-                    if (!text) return;
-                    const el = document.createElement('textarea');
-                    el.value = text;
-                    document.body.appendChild(el);
-                    el.select();
-                    document.execCommand('copy');
-                    document.body.removeChild(el);
-                    syncStatus.value = { text: '✅ 已複製地址', icon: 'ph-bold ph-check-circle text-green-400' };
-                    setTimeout(() => { syncStatus.value = null; }, 2000);
-                };
 
-                const getDotColor = (t) => t==='food'?'bg-orange-400':t==='shop'?'bg-pink-400':t==='flight'?'bg-blue-500':'bg-teal-500';
+                // ✨ 加入住宿顏色的 mapping
+                const getDotColor = (t) => t==='food'?'bg-orange-400':t==='shop'?'bg-pink-400':t==='flight'?'bg-blue-500':t==='hotel'?'bg-purple-500':'bg-teal-500';
                 const updateParticipants = () => { participants.value = participantsStr.value.split(',').map(s=>s.trim()).filter(s=>s); };
                 const updateDate = (e, day) => {
                     const val = e.target.value; if(!val) return;
@@ -1148,7 +1132,7 @@
                 const addItem = () => currentDay.value.items.push({ time: '', type: 'spot', activity: '', location: '', note: '' });
                 const removeItem = (idx) => currentDay.value.items.splice(idx, 1);
                 
-                // ✨ 排序：上移下移功能
+                // 排序：上移下移功能
                 const moveItem = (idx, direction) => {
                     const newIdx = idx + direction;
                     if (newIdx >= 0 && newIdx < currentDay.value.items.length) {
@@ -1281,7 +1265,7 @@
                         const fullDate = `${curr.getFullYear()}-${mm < 10 ? '0'+mm : mm}-${dd < 10 ? '0'+dd : dd}`;
                         newDays.push({
                             date: `${mm < 10 ? '0'+mm : mm}/${dd < 10 ? '0'+dd : dd} (${dNames[curr.getDay()]})`,
-                            shortDate: `${mm}/${dd}`, fullDate: fullDate, title: i===0?'抵達 & 探索':'行程規劃', accommodation: null, items: [], flight: null
+                            shortDate: `${mm}/${dd}`, fullDate: fullDate, title: i===0?'抵達 & 探索':'行程規劃', items: [], flight: null
                         });
                     }
                     
@@ -1312,7 +1296,7 @@
                     }
                 };
 
-                // ✨ 匯出當前行程代碼
+                // 匯出當前行程代碼 (打開視窗)
                 const exportCurrentTrip = () => {
                     if (!currentTripId.value) return;
                     const exportObj = {
@@ -1328,18 +1312,37 @@
                         expenses: expenses.value,
                         days: days.value
                     };
-                    const jsonStr = JSON.stringify(exportObj, null, 4);
                     
+                    // 將資料轉成格式化的 JSON 字串並顯示視窗
+                    exportDataStr.value = JSON.stringify(exportObj, null, 4);
+                    showTripMenu.value = false;
+                    showExportModal.value = true;
+                };
+
+                // 複製代碼功能
+                const copyExportData = () => {
                     const el = document.createElement('textarea');
-                    el.value = jsonStr;
+                    el.value = exportDataStr.value;
                     document.body.appendChild(el);
                     el.select();
                     document.execCommand('copy');
                     document.body.removeChild(el);
+                    
+                    syncStatus.value = { text: '✅ 已複製代碼', icon: 'ph-bold ph-check-circle text-green-400' };
+                    setTimeout(() => { syncStatus.value = null; }, 3000);
+                };
 
-                    showTripMenu.value = false;
-                    syncStatus.value = { text: '✅ 已複製代碼，請貼上至 defaultEuroTripData', icon: 'ph-bold ph-check-circle text-green-400' };
-                    setTimeout(() => { syncStatus.value = null; }, 5000);
+                // 下載 .json 檔案功能
+                const downloadJson = () => {
+                    const blob = new Blob([exportDataStr.value], { type: "application/json" });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `Trip_Export_${setup.value.destination}.json`;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(url);
                 };
 
                 // --- 初始化流程 ---
@@ -1464,8 +1467,8 @@
                     getTimePeriod, weather,
                     isMapLoading, userLocation, initMap, centerOnUser,
                     updateDate, showSetupModal, setup, initTrip, weatherDisplay, detectRate, isRateLoading, currencyLabel, currencySymbol, toggleFlightCard, getDotColor,
-                    showTripMenu, tripList, createNewTrip, switchTrip, deleteTrip, currentTripId, exportCurrentTrip,
-                    toggleAccommodation, copyText, // 導出新增的住宿功能
+                    showTripMenu, tripList, createNewTrip, switchTrip, deleteTrip, currentTripId, 
+                    exportCurrentTrip, showExportModal, exportDataStr, copyExportData, downloadJson,
                     searchNearby, recommendationsMap, isSearchingRecs, applyRecommendation, searchTargetIndex
                 };
             }
