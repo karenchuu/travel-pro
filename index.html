@@ -53,32 +53,34 @@
 
         <!-- Header (動態背景色：記帳時為深綠) -->
         <header :class="viewMode === 'money' ? 'bg-[#117A65]' : 'bg-teal-600'" class="text-white shrink-0 z-20 shadow-md pt-3 transition-colors duration-300">
-            <div class="p-4 flex justify-between items-center">
-                <div class="flex items-center gap-3">
-                    <button @click="showTripMenu = true" class="text-teal-100 hover:text-white transition">
+            <div class="px-4 py-3 flex justify-between items-center gap-2">
+                <div class="flex items-center gap-3 flex-1 min-w-0">
+                    <button @click="showTripMenu = true" class="text-teal-100 hover:text-white transition shrink-0">
                         <i class="ph-bold ph-list text-2xl"></i>
                     </button>
-                    <div class="overflow-hidden">
-                        <h1 class="text-xl font-bold tracking-wide flex items-center gap-2 truncate">
-                            {{ setup.destination || '旅遊計畫' }} 
-                            <span class="text-xs bg-white/20 px-2 py-0.5 rounded-full">{{ setup.days }}天</span>
+                    <div class="flex-1 min-w-0">
+                        <h1 class="text-lg font-bold tracking-wide flex items-center gap-1.5 truncate">
+                            <span class="truncate">{{ setup.destination || '旅遊計畫' }}</span>
+                            <i v-if="viewMode !== 'money'" class="ph-fill ph-airplane-tilt text-sm opacity-70 shrink-0"></i>
+                            <span v-if="viewMode === 'money'" class="text-[10px] bg-white/20 px-1.5 py-0.5 rounded-full shrink-0">{{ setup.days }}天</span>
                         </h1>
-                        <p v-if="days.length > 0" class="text-xs text-teal-100 mt-0.5 font-medium tracking-wider truncate">
+                        <p v-if="viewMode !== 'money'" class="text-[10px] text-teal-100 mt-0.5 font-light tracking-wider truncate">點擊下方日期切換行程</p>
+                        <p v-if="viewMode === 'money' && days.length > 0" class="text-[10px] text-teal-100 mt-0.5 font-medium tracking-wider truncate">
                             {{ days[0].fullDate.replace(/-/g, '/') }} - {{ days[days.length-1].fullDate.replace(/-/g, '/') }}
                         </p>
                     </div>
                 </div>
-                <div class="flex items-center gap-2 shrink-0">
+                <div class="flex items-center gap-1.5 shrink-0">
                     <button @click="viewMode = 'translate'" 
                             :class="viewMode === 'translate' ? 'bg-white text-teal-700 shadow-sm' : 'bg-teal-500/30 text-teal-200 hover:bg-teal-500/50'"
-                            class="p-2.5 rounded-xl transition-all h-11 w-11 flex items-center justify-center border border-teal-500/30">
+                            class="p-2 rounded-xl transition-all h-9 w-9 sm:h-10 sm:w-10 flex items-center justify-center border border-teal-500/30">
                         <i class="ph-bold ph-translate text-xl"></i>
                     </button>
 
-                    <div class="flex bg-black/20 p-1 rounded-lg">
-                        <button @click="viewMode = 'plan'" :class="viewMode === 'plan' ? 'bg-white text-teal-700 shadow-sm' : 'text-teal-200'" class="p-2 rounded-md transition-all"><i class="ph-bold ph-calendar-check text-lg"></i></button>
-                        <button @click="viewMode = 'map'" :class="viewMode === 'map' ? 'bg-white text-teal-700 shadow-sm' : 'text-teal-200'" class="p-2 rounded-md transition-all"><i class="ph-bold ph-map-trifold text-lg"></i></button>
-                        <button @click="viewMode = 'money'" :class="viewMode === 'money' ? 'bg-white text-[#117A65] shadow-sm' : 'text-teal-200'" class="p-2 rounded-md transition-all"><i class="ph-bold ph-currency-dollar text-lg"></i></button>
+                    <div class="flex bg-black/20 p-1 rounded-lg shrink-0">
+                        <button @click="viewMode = 'plan'" :class="viewMode === 'plan' ? 'bg-white text-teal-700 shadow-sm' : 'text-teal-200'" class="px-1.5 py-1 sm:px-2 sm:py-1.5 rounded-md transition-all"><i class="ph-bold ph-calendar-check text-lg"></i></button>
+                        <button @click="viewMode = 'map'" :class="viewMode === 'map' ? 'bg-white text-teal-700 shadow-sm' : 'text-teal-200'" class="px-1.5 py-1 sm:px-2 sm:py-1.5 rounded-md transition-all"><i class="ph-bold ph-map-trifold text-lg"></i></button>
+                        <button @click="viewMode = 'money'" :class="viewMode === 'money' ? 'bg-white text-[#117A65] shadow-sm' : 'text-teal-200'" class="px-1.5 py-1 sm:px-2 sm:py-1.5 rounded-md transition-all"><i class="ph-bold ph-currency-dollar text-lg"></i></button>
                     </div>
                 </div>
             </div>
