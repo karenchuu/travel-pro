@@ -187,10 +187,16 @@
                                         </div>
                                         <!-- 內容輸入 -->
                                         <div class="flex-1 min-w-0 pt-1">
-                                            <!-- 將筆記 (i) 按鈕移動到景點標題旁邊 -->
                                             <div class="flex items-center justify-between gap-2">
                                                 <input v-model="item.activity" class="flex-1 min-w-0 font-bold text-slate-800 bg-transparent border-none p-0 focus:ring-0" placeholder="行程名稱...">
-                                                <button @click="openDetails(item)" class="text-blue-500 hover:text-blue-700 bg-blue-50 hover:bg-blue-100 p-1 rounded-full transition-colors shrink-0" title="詳細筆記"><i class="ph-bold ph-info text-base"></i></button>
+                                                
+                                                <!-- ✨ 智慧筆記按鈕：空的時候顯示淺灰鉛筆，有的時候顯示藍色 Info -->
+                                                <button @click="openDetails(item)" 
+                                                        :class="item.description && item.description.trim() !== '' ? 'text-blue-500 hover:text-blue-700 bg-blue-50 hover:bg-blue-100' : 'text-slate-300 hover:text-blue-500 bg-slate-50 hover:bg-blue-50 border border-slate-100 hover:border-blue-200'" 
+                                                        class="p-1 rounded-full transition-colors shrink-0" 
+                                                        :title="item.description && item.description.trim() !== '' ? '查看詳細筆記' : '新增詳細筆記'">
+                                                    <i :class="item.description && item.description.trim() !== '' ? 'ph-bold ph-info text-base' : 'ph-bold ph-pencil-simple text-base'"></i>
+                                                </button>
                                             </div>
                                             <div class="flex items-center gap-1 mt-1">
                                                 <i class="ph-fill ph-map-pin text-teal-400 text-xs"></i>
@@ -1066,7 +1072,7 @@
                 // Firebase 同步控制
                 const firebaseReady = ref(false);
                 let unsubscribeSnapshot = null;
-                let isRemoteUpdating = false; 
+                let isRemoteUpdating = false; // 🛡️ 終極防護：防止本地錯誤覆蓋雲端的安全鎖
                 let mapInstance = null;
 
                 // ✨ 新增：快取與天氣狀態管理
